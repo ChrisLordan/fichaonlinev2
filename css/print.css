@@ -1,0 +1,58 @@
+/* =========================================================
+   PRINT — Estilos para impressão / PDF
+   ========================================================= */
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  .app-header,
+  .app-footer,
+  .section-tabs,
+  .subtabs,
+  .btn,
+  .save-indicator,
+  #toast-container,
+  #modal-container {
+    display: none !important;
+  }
+
+  .app-main { padding: 0; max-width: 100%; }
+
+  .card,
+  .collapsible,
+  .tracker,
+  .attr-card,
+  .table {
+    background: white !important;
+    color: black !important;
+    border-color: #cbd5e1 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .collapsible[aria-expanded="false"] .collapsible__body { display: block !important; }
+  .collapsible__icon { display: none; }
+
+  h1, h2, h3, h4, h5, h6, p, span, td, th, label {
+    color: black !important;
+  }
+
+  .input, .textarea, .select {
+    background: transparent !important;
+    border: 0 !important;
+    color: black !important;
+    padding: 1px 2px !important;
+  }
+
+  .tag, .chip, .pill, .badge {
+    background: white !important;
+    color: black !important;
+    border-color: #94a3b8 !important;
+  }
+}
