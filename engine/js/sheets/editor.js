@@ -1493,13 +1493,16 @@ function renderHabilidades(container) {
       <div class="card" style="margin-top: var(--gap-4);">
         <h4>Características de Anatomia</h4>
         <p class="text-xs text-soft">Escolha características para seu corpo amaldiçoado. A cada 5 níveis, mais uma.</p>
-        ${anatomiaFetoEditor(body)}
+        <div data-anatomy-options></div>
       </div>
       ` : ""}
     `;
+    if(o.id==='Feto Amaldiçoado Híbrido')anatomiaFetoEditor(body);
   }
 
   function anatomiaFetoEditor(body) {
+    const wrap=body.querySelector('[data-anatomy-options]');
+    if(!wrap)return;
     const ANATOMIAS = ["Alma Maldita", "Capacidade de Voo", "Carapaça Mutante", "Corpo Especializado", "Desenvolvimento Exagerado", "Devorador de Energia", "Instinto Sanguinário", "Anatomia Incompreensível", "Arma Natural", "Articulações Extensas", "Braços Extras", "Olhos Sombrios", "Pernas Extras", "Presença Nefasta", "Sangue Tóxico"];
     if (!state.origemDetalhes.anatomias) state.origemDetalhes.anatomias = [];
     const html = ANATOMIAS.map(a => {
@@ -1510,13 +1513,9 @@ function renderHabilidades(container) {
         <span class="check__label text-sm">${a}</span>
       </label>`;
     }).join("");
-    // Re-attach to existing card
-    const card = body.querySelectorAll(".card")[1];
-    const last = card.querySelector("p:last-of-type");
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-1); margin-top: var(--gap-3);";
+    wrap.className='grid grid-2';
+    wrap.style.marginTop='var(--gap-3)';
     wrap.innerHTML = html;
-    last.insertAdjacentElement("afterend", wrap);
     wrap.querySelectorAll("[data-anat]").forEach(inp => {
       inp.onchange = () => {
         const a = inp.dataset.anat;
