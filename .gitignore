@@ -1,5 +1,6 @@
 node_modules/
+reference/
+tmp-render/
+.vscode/
+*.pdf
 *.log
-.serve-9000.log
-.server.log
-Feiticeiros & Maldições - Livro de Regras v2.5.2.json

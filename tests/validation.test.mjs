@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { validateLevel, clampResource } from '../js/validation.js';
+import { emptySheet, saveSheet, importSheet, getSheets } from '../js/storage.js';
+globalThis.localStorage = { value: null, getItem() { return this.value; }, setItem(k,v) { this.value=v; } };
+for (let level=1;level<=20;level++) assert.equal(validateLevel(level),level);
+for (const level of [0,21,30,40,-1,1.5,NaN,Infinity]) assert.throws(()=>validateLevel(level));
+const sheet=emptySheet();saveSheet(sheet);
+sheet.information.level=40;assert.throws(()=>saveSheet(sheet));
+await assert.rejects(importSheet({text:async()=>JSON.stringify(sheet)}));
+assert.equal(getSheets()[0].information.level,1);
+assert.equal(clampResource(30,20),20);
+assert.equal(clampResource(10,20),10);
+assert.equal(clampResource(-1,20),0);
+console.log('Níveis 1–20, rejeição de salvamento/importação e limites de recursos: OK');

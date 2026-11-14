@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {validColor,applyColors} from '../js/theme.js';
+import {getPreferences} from '../js/settings.js';
+let stored=null;globalThis.localStorage={getItem:()=>stored};
+assert.equal(getPreferences().disableRollHistory,false);
+stored=JSON.stringify({rollDuration:20,disableRollHistory:true,colors:{'#dc172c':'#1255ff'}});assert.equal(getPreferences().disableRollHistory,true);
+const values=new Map();const style={*[Symbol.iterator](){yield*values.keys();},setProperty:(k,v)=>values.set(k,v),removeProperty:k=>values.delete(k)};globalThis.document={documentElement:{style}};
+applyColors(getPreferences().colors);assert.equal(values.get('--site-color-dc172c'),'#1255ff');
+applyColors({});assert.equal(values.size,0);assert.ok(!validColor('red;display:none'));assert.ok(validColor('#00AAff'));
+console.log('Preferências: histórico, cores válidas, aplicação e restauração OK.');

@@ -1,0 +1,11 @@
+.editor-section{display:block!important;margin-bottom:12px;padding:0;scroll-margin-top:90px}
+.editor-section.wizard-hidden{display:none!important}.wizard-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0}.wizard-toolbar strong{font-size:13px}
+.accordion-toggle{width:100%;display:flex;align-items:center;gap:16px;text-align:left;background:transparent;border:0;color:var(--text);padding:20px;font:700 24px var(--title)}
+.accordion-toggle:hover{background:color-mix(in srgb, var(--site-color-dc172c, #dc172c) 7.059%, transparent)}.accordion-toggle:focus-visible{outline:2px solid var(--red)}
+.accordion-toggle small{font:11px var(--font);color:var(--muted);margin-left:auto}
+.accordion-toggle:after{content:'⌄';transition:transform .2s;color:var(--red-bright)}
+.accordion-toggle[aria-expanded=true]:after{transform:rotate(180deg)}
+.accordion-content{padding:0 22px 22px;animation:fade .2s ease}.accordion-content[hidden]{display:none}
+.collapse-all{margin-bottom:16px}.level-control{display:flex;gap:8px}.level-control input{text-align:center;font-family:'DM Mono',monospace}.button:disabled{opacity:.35;cursor:default;transform:none}
+@media(max-width:600px){.accordion-toggle{font-size:21px;flex-wrap:wrap}.accordion-toggle small{font-size:9px}}
+@media print{.accordion-content[hidden]{display:block}.accordion-toggle{color:var(--site-color-000000, #000000)}.collapse-all{display:none}}

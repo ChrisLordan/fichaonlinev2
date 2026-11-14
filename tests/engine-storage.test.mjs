@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { emptySheet, STORAGE_KEY } from '../js/storage.js';
+import {getChar,saveChar,duplicateChar,importChar,deleteChar}from '../engine/js/storage/cookies.js';
+const map=new Map();globalThis.localStorage={getItem:k=>map.get(k)||null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+const old=emptySheet();old.information.name='Ficha antiga';old.notes='Preservar';old.resources.hpCurrent=7;old.specialization.name='Controlador';map.set(STORAGE_KEY,JSON.stringify([old]));
+const before=map.get(STORAGE_KEY),converted=getChar(old.id);assert.equal(map.get(STORAGE_KEY),before);assert.equal(converted.pontos.pvAtual,7);assert.equal(converted.legacySnapshot.notes,'Preservar');
+converted.identificacao.nome='Editada';saveChar(converted);assert.equal(getChar(old.id).identificacao.nome,'Editada');assert.equal(JSON.parse(map.get(STORAGE_KEY))[0].notes,'Preservar');
+const copy=duplicateChar(old.id);assert.notEqual(copy,old.id);deleteChar(copy);assert.ok(getChar(old.id));
+converted.identificacao.nivel=21;assert.throws(()=>saveChar(converted));assert.equal(importChar(JSON.stringify(converted)),null);assert.equal(getChar(old.id).identificacao.nivel,1);
+console.log('Migração sem escrita na leitura, preservação, edição, duplicação e limite de nível OK.');

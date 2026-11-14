@@ -1,0 +1,4 @@
+.hero.hero--text{grid-template-columns:1fr;min-height:440px;max-width:1140px}
+.sheet-count{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;min-width:30px;height:30px;padding:0 9px;margin-left:8px;border:1px solid color-mix(in srgb, var(--site-color-dc172c, #dc172c) 40%, transparent);border-radius:20px;background:color-mix(in srgb, var(--site-color-dc172c, #dc172c) 9.412%, transparent);color:var(--red-bright);font:700 14px var(--font)}
+.recent-sheet-link{display:block;border-radius:8px}.recent-sheet-link .sheet-card{height:100%}.recent-sheet-link:focus-visible{outline:2px solid var(--red-bright);outline-offset:5px}
+@media(max-width:720px){.recent>div:first-child{flex-wrap:wrap;gap:8px}.hero.hero--text{min-height:auto}}
