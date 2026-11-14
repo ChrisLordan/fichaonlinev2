@@ -33,13 +33,15 @@ let saveTimeout = null;
 
 function scheduleSave() {
   if (saveTimeout) clearTimeout(saveTimeout);
-  import('../app.js').then(({ setSaveState }) => setSaveState("saving"));
+  setEditorSaveState('saving');
   saveTimeout = setTimeout(() => {
     if (!state) return;
-    try { saveChar(state); import('../app.js').then(({ setSaveState }) => setSaveState("saved")); }
-    catch (error) { import('../app.js').then(({ setSaveState }) => setSaveState("error")); toast(error.message, "error"); }
+    try { saveChar(state); setEditorSaveState('saved'); }
+    catch (error) { setEditorSaveState('error'); toast(error.message, "error"); }
   }, 400);
 }
+
+function setEditorSaveState(value){document.querySelector('.save-indicator')?.setAttribute('data-state',value);}
 
 export function renderEditor(app, id) {
   const data = getChar(id);

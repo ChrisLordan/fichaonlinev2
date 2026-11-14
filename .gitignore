@@ -1,4 +1,5 @@
 node_modules/
+.test-runtime/
 reference/
 tmp-render/
 .vscode/
