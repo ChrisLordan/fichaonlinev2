@@ -42,19 +42,20 @@ export function renderCursedProfile(root,char,handlers){
   const add=make('button','+ Adicionar aptidão','btn btn--subtle btn--sm');add.type='button';add.onclick=()=>{char.aptidoes.personalizadas.push({nome:'',atual:0,maximo:0,custo:''});handlers.save();render();};apt.append(table,add);grid.append(apt);
 
   const list=panel(restricted?'Lista de Artes Marciais':'Lista de Feitiço','cursed-spells');
-  function openSpellModal(){
+  function openAddModal(){
    const overlay=make('div',null,'cursed-spell-modal-backdrop'),dialog=make('section',null,'cursed-spell-modal');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','cursed-spell-modal-title');
-   const title=make('h2','Adicionar Feitiço');title.id='cursed-spell-modal-title';dialog.append(title);
-   const nameWrap=make('label','Nome','field'),name=make('input');name.type='text';name.placeholder='Nome do feitiço';name.required=true;nameWrap.append(name);
-   const descriptionWrap=make('label','Descrição','field'),description=make('textarea');description.rows=6;description.placeholder='Descrição do feitiço';descriptionWrap.append(description);
-   const levelWrap=make('label','Nível','field'),level=make('select');for(let n=0;n<=5;n++)level.add(new Option('Nível '+n,String(n)));level.value='1';levelWrap.append(level);
+   const entryName=restricted?'arte marcial':'feitiço';
+   const title=make('h2','Adicionar '+(restricted?'Arte Marcial':'Feitiço'));title.id='cursed-spell-modal-title';dialog.append(title);
+   const nameWrap=make('label','Nome','field'),name=make('input');name.type='text';name.placeholder='Nome da '+entryName;name.required=true;nameWrap.append(name);
+   const descriptionWrap=make('label','Descrição','field'),description=make('textarea');description.rows=6;description.placeholder='Descrição da '+entryName;descriptionWrap.append(description);
+   const levelWrap=make('label','Nível','field'),level=make('select');for(let n=0;n<=5;n++)level.add(new Option((restricted?'Nível ':'Nível ')+n,String(n)));level.value='1';levelWrap.append(level);
    let onKey;const close=()=>{overlay.remove();document.removeEventListener('keydown',onKey);};
-   const actions=make('div',null,'cursed-spell-modal-actions'),cancel=make('button','Cancelar','btn btn--subtle'),save=make('button','Salvar Feitiço','btn btn--primary');cancel.type=save.type='button';cancel.onclick=close;save.onclick=()=>{if(!name.value.trim()){name.focus();return;}char.tecnica.feiticos ||= [];char.tecnica.feiticos.push({nome:name.value.trim(),descricao:description.value,nivel:Number(level.value)});handlers.save();close();render();};
+   const actions=make('div',null,'cursed-spell-modal-actions'),cancel=make('button','Cancelar','btn btn--subtle'),save=make('button','Salvar '+(restricted?'Arte Marcial':'Feitiço'),'btn btn--primary');cancel.type=save.type='button';cancel.onclick=close;save.onclick=()=>{if(!name.value.trim()){name.focus();return;}const destination=restricted?(char.estiloMarcial.tecnicas ||= []):(char.tecnica.feiticos ||= []);destination.push({nome:name.value.trim(),descricao:description.value,nivel:Number(level.value)});handlers.save();close();render();};
    actions.append(cancel,save);
    dialog.append(nameWrap,descriptionWrap,levelWrap,actions);overlay.append(dialog);content.append(overlay);overlay.addEventListener('click',event=>{if(event.target===overlay)close();});
    onKey=event=>{if(event.key==='Escape')close();};document.addEventListener('keydown',onKey);name.focus();
   }
-  if(!restricted){const addSpell=make('button','+ Adicionar feitiço','btn btn--subtle btn--sm');addSpell.type='button';addSpell.onclick=()=>openSpellModal();list.append(addSpell);}
+  const addSpell=make('button',restricted?'+ Adicionar arte marcial':'+ Adicionar feitiço','btn btn--subtle btn--sm');addSpell.type='button';addSpell.onclick=()=>openAddModal();list.append(addSpell);
   const rows=make('div',null,'cursed-spell-levels');
   for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?'Arte Marcial Nível '+level:'Feitiços Nível '+level));const found=techniques.filter(item=>Number(item.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note'),summary=make('summary',technique.nome||'Sem nome');note.append(summary,make('p',technique.descricao||'Sem descrição.'));
     group.append(note);
