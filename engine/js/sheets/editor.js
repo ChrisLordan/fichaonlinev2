@@ -14,19 +14,15 @@ import { toast } from '../ui/toast.js';
 import { CUSTOM_ORIGIN, customOriginForm } from '../ui/custom-origin.js';
 import { renderAbilityCatalog } from '../ui/ability-catalog.js';
 import {isRestricted,resourcePoints,labelResources} from '../data/resources.js';
-import {renderMartial,renderGifts,renderTraining} from '../ui/restricted.js?v=20261115-clean-interface-3';
+import {renderMartial,renderGifts,renderTraining} from '../ui/restricted.js?v=20261115-profile-4';
 import {renderAttackChecks} from '../ui/attack-checks.js';
+import {renderCursedProfile} from '../ui/cursed-profile.js';
 import { confirmDialog, promptDialog, openModal, alertDialog, el } from '../ui/modais.js';
 
 const FAB_SECTIONS = [
-  { id: "ident", label: "Identificação", icon: "👤" },
-  { id: "aspectos", label: "Aspectos", icon: "📋" },
-  { id: "atributos", label: "Atributos", icon: "📊" },
-  { id: "recursos", label: "Recursos", icon: "💎" },
-  { id: "pericias", label: "Perícias & TR", icon: "🎯" },
+  { id: "personagem", label: "Personagem", icon: "👤" },
+  { id: "perfil", label: "Perfil Amaldiçoado", icon: "🌀" },
   { id: "ataques", label: "Ataques & CDs", icon: "⚔" },
-  { id: "tecnica", label: "Técnica & Feitiços", icon: "🌀" },
-  { id: "habilidades", label: "Habilidades", icon: "⭐" },
   { id: "inventario", label: "Inventário", icon: "🎒" },
   { id: "anotacoes", label: "Anotações", icon: "🗒" },
 ];
@@ -135,6 +131,8 @@ export function renderEditor(app, id) {
 
 function renderTab(tab, container) {
   try{
+  if(tab==='personagem')return renderCharacterPanel(container);
+  if(tab==='perfil')return renderCursedProfile(container,state,{technique:renderTecnica,abilities:renderHabilidades,save:()=>{recalcularPontos(state);scheduleSave();}});
   if (tab === "ident") return renderIdentificacao(container);
   if (tab === "aspectos") return renderAspectos(container);
   if (tab === "atributos") return renderAtributos(container);
@@ -146,6 +144,12 @@ function renderTab(tab, container) {
   if (tab === "inventario") return renderInventario(container);
   if (tab === "anotacoes") return renderAnotacoes(container);
   }finally{labelResources(container,state);}
+}
+
+function renderCharacterPanel(container){
+ const nav=document.createElement('div');nav.className='subtabs';const content=document.createElement('div');container.replaceChildren(nav,content);
+ const tabs=[['ident','Identificação'],['aspectos','Aspectos'],['atributos','Atributos'],['recursos','Recursos'],['pericias','Perícias e TR']];
+ for(const [id,label]of tabs){const button=document.createElement('button');button.className='subtab';button.textContent=label;button.onclick=()=>{for(const b of nav.children)b.removeAttribute('aria-current');button.setAttribute('aria-current','true');renderTab(id,content);};nav.append(button);}nav.firstElementChild.click();
 }
 
 /* =========================================================
@@ -425,9 +429,11 @@ function bindFab(app, id) {
   if (!fab || !menu || !icon) return;
 
   let isOpen = false;
+  fab.setAttribute('aria-controls','fab-menu');fab.setAttribute('aria-expanded','false');
 
   fab.addEventListener("click", () => {
     isOpen = !isOpen;
+    fab.setAttribute('aria-expanded',String(isOpen));
     menu.hidden = !isOpen;
     fab.classList.toggle("fab--open", isOpen);
     icon.textContent = isOpen ? "×" : "+";
@@ -437,7 +443,7 @@ function bindFab(app, id) {
     btn.addEventListener("click", () => {
       const sec = btn.dataset.section;
       openSectionModal(sec, id);
-      // Não fecha o menu — usuário pode escolher outra seção
+      isOpen=false;menu.hidden=true;fab.classList.remove('fab--open');icon.textContent='+';fab.setAttribute('aria-expanded','false');
     });
   });
 }
@@ -1439,10 +1445,10 @@ function renderTecnica(container) {
    ABA 8 — HABILIDADES
    ========================================================= */
 
-function renderHabilidades(container) {
+function renderHabilidades(container, initial='origem') {
   // Sub-abas: Origem | Especialização | Talentos | Aptidões | Treinamentos
   let sub = "origem";
-  const state_local = { current: "origem" };
+  const state_local = { current: initial };
 
   function render() {
     container.innerHTML = `

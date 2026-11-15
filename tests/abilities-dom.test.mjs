@@ -14,7 +14,7 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const specs=['Controlador','Lutador','Especialista em Combate','Especialista em Técnica','Suporte','Restringido'];
 for(const origin of ['Inato','Herdado','Derivado','Feto Amaldiçoado Híbrido','Sem Técnica','Corpo Amaldiçoado Mutante','Restringido','Origem Personalizada (Homebrew)'])for(const spec of specs){
  const c=createEmpty();c.identificacao.especializacao=spec;c.identificacao.especializacoes=[{id:spec,nivel:2}];c.identificacao.nivel=2;c.identificacao.origem=origin;saveChar(c);
- const cleanup=renderEditor(document.querySelector('#app'),c.id);document.querySelector('[data-section="habilidades"]').click();await wait(100);
+ const cleanup=renderEditor(document.querySelector('#app'),c.id);assert.equal(document.querySelectorAll('#fab-menu [data-section]').length,5);document.querySelector('[data-section="perfil"]').click();await wait(100);document.querySelector('[data-profile-tab="skills"]').click();
  const body=document.querySelector('#section-modal-body');assert.ok(!body.textContent.includes('Erro ao carregar'),body.textContent);
  assert.ok(body.querySelector('[data-sub="especializacao"]'),'Sub-abas ausentes');body.querySelector('[data-sub="especializacao"]').click();await wait(100);
  assert.ok(body.querySelector('.ability-name'),`Catálogo ausente para ${spec}: ${body.textContent}`);
