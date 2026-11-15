@@ -534,6 +534,31 @@ function renderVisaoCentral(container) {
 
   // Atributos editáveis na visão central
   renderAttackChecks(container.querySelector('.visao-central'),state,scheduleSave);
+  container.querySelectorAll('.visao-characteristics-card [data-main-path]').forEach(field=>{
+    const path=field.dataset.mainPath;
+    const syncNote=()=>{
+      const note=state.notasCaracteristicas?.[path]||'';
+      field.classList.toggle('sheet-note-present',Boolean(note));
+      field.title=note?`Nota: ${note}`:'Clique com o botão direito para adicionar uma nota';
+    };
+    syncNote();
+    field.addEventListener('contextmenu',event=>{
+      event.preventDefault();
+      const editor=el('textarea',{class:'textarea sheet-note-editor',rows:'7',placeholder:'Escreva uma nota para este campo…'});
+      editor.value=state.notasCaracteristicas?.[path]||'';
+      const help=el('p',{class:'text-xs text-mute'},'A nota fica salva nesta ficha e aparece como dica no campo.');
+      const body=el('div',{class:'sheet-note-dialog'},[help,editor]);
+      const dialog=openModal({title:'Nota do campo',body,wide:true});
+      if(!dialog)return;
+      const actions=el('div',{class:'row row--between row--wrap'});
+      const remove=el('button',{type:'button',class:'btn btn--ghost btn--sm'},'Remover nota');
+      const save=el('button',{type:'button',class:'btn btn--primary btn--sm'},'Salvar nota');
+      actions.append(remove,save);dialog.body.append(actions);
+      remove.onclick=()=>{state.notasCaracteristicas||={};delete state.notasCaracteristicas[path];syncNote();scheduleSave();dialog.close();};
+      save.onclick=()=>{state.notasCaracteristicas||={};const value=editor.value.trim();if(value)state.notasCaracteristicas[path]=value;else delete state.notasCaracteristicas[path];syncNote();scheduleSave();dialog.close();};
+      editor.focus();
+    });
+  });
   const writeSheetPath=(path,value)=>{
     const parts=path.split('.');let target=state;
     for(const key of parts.slice(0,-1)){if(target[key]==null)target[key]=/^\d+$/.test(key)?[]:{};target=target[key];}
