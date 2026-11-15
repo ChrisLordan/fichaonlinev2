@@ -42,15 +42,24 @@ export function renderCursedProfile(root,char,handlers){
   const add=make('button','+ Adicionar aptidão','btn btn--subtle btn--sm');add.type='button';add.onclick=()=>{char.aptidoes.personalizadas.push({nome:'',atual:0,maximo:0,custo:''});handlers.save();render();};apt.append(table,add);grid.append(apt);
 
   const list=panel(restricted?'Lista de Artes Marciais':'Lista de Feitiço','cursed-spells');
-  if(!restricted){const addSpell=make('button','+ Adicionar feitiço','btn btn--subtle btn--sm');addSpell.type='button';addSpell.onclick=()=>{char.tecnica.feiticos ||= [];char.tecnica.feiticos.push({nivel:1,nome:'Novo feitiço',custo:1,alcance:'9m',alvo:'1 criatura',duracao:'instantâneo',descricao:''});handlers.save();render();};list.append(addSpell);}
+  function openSpellModal(spell=null,index=-1){
+   const overlay=make('div',null,'cursed-spell-modal-backdrop'),dialog=make('section',null,'cursed-spell-modal');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','cursed-spell-modal-title');
+   const title=make('h2',spell?'Editar Feitiço':'Adicionar Feitiço');title.id='cursed-spell-modal-title';dialog.append(title);
+   const nameWrap=make('label','Nome','field'),name=make('input');name.type='text';name.value=spell?.nome||'';name.placeholder='Nome do feitiço';name.required=true;nameWrap.append(name);
+   const descriptionWrap=make('label','Descrição','field'),description=make('textarea');description.rows=6;description.value=spell?.descricao||'';description.placeholder='Descrição do feitiço';descriptionWrap.append(description);
+   const levelWrap=make('label','Nível','field'),level=make('select');for(let n=0;n<=5;n++)level.add(new Option('Nível '+n,String(n)));level.value=String(spell?.nivel??1);levelWrap.append(level);
+   let onKey;const close=()=>{overlay.remove();document.removeEventListener('keydown',onKey);};
+   const actions=make('div',null,'cursed-spell-modal-actions'),cancel=make('button','Cancelar','btn btn--subtle'),save=make('button','Salvar Feitiço','btn btn--primary');cancel.type=save.type='button';cancel.onclick=close;save.onclick=()=>{if(!name.value.trim()){name.focus();return;}const target=spell||{};target.nome=name.value.trim();target.descricao=description.value;target.nivel=Number(level.value);if(!spell){char.tecnica.feiticos ||= [];char.tecnica.feiticos.push(target);}handlers.save();close();render();};
+   actions.append(cancel,save);
+   if(spell){const remove=make('button','Remover Feitiço','btn btn--danger');remove.type='button';remove.onclick=()=>{char.tecnica.feiticos.splice(index,1);handlers.save();close();render();};actions.append(remove);}
+   dialog.append(nameWrap,descriptionWrap,levelWrap,actions);overlay.append(dialog);content.append(overlay);overlay.addEventListener('click',event=>{if(event.target===overlay)close();});
+   onKey=event=>{if(event.key==='Escape')close();};document.addEventListener('keydown',onKey);name.focus();
+  }
+  if(!restricted){const addSpell=make('button','+ Adicionar feitiço','btn btn--subtle btn--sm');addSpell.type='button';addSpell.onclick=()=>openSpellModal();list.append(addSpell);}
   const rows=make('div',null,'cursed-spell-levels');
-  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?'Arte Marcial Nível '+level:'Feitiços Nível '+level));const found=techniques.map((item,index)=>({item,index})).filter(({item})=>Number(item.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const {item:technique,index} of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'));
+  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?'Arte Marcial Nível '+level:'Feitiços Nível '+level));const found=techniques.map((item,index)=>({item,index})).filter(({item})=>Number(item.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const {item:technique,index} of found){const note=make('details',null,'cursed-spell-note'),summary=make('summary',technique.nome||'Sem nome');note.append(summary);
     if(restricted)note.append(make('p',technique.descricao||'Sem descrição.'));
-    else{
-     const fields=make('div',null,'cursed-spell-edit');
-     for(const [key,label,type]of [['nome','Nome','text'],['nivel','Nível','number'],['custo','Custo em PE','number'],['alcance','Alcance','text'],['alvo','Alvo','text'],['duracao','Duração','text'],['descricao','Descrição','textarea']]){const wrap=make('label',label,'field'),field=make(type==='textarea'?'textarea':'input');if(type!=='textarea')field.type=type;field.value=technique[key]??'';if(type==='number'){field.min='0';if(key==='nivel')field.max='5';}field.oninput=()=>{technique[key]=type==='number'?(field.value===''?'':Number(field.value)):field.value;handlers.save();};if(type==='textarea')field.rows=3;wrap.append(field);fields.append(wrap);}
-     const remove=make('button','Remover feitiço','btn btn--danger btn--sm');remove.type='button';remove.onclick=()=>{char.tecnica.feiticos.splice(index,1);handlers.save();render();};fields.append(remove);note.append(fields);
-    }
+    else summary.onclick=event=>{event.preventDefault();openSpellModal(technique,index);};
     group.append(note);
    }rows.append(group);}list.append(rows);grid.append(list);  const aptLevels=panel('Níveis de Aptidão','cursed-aptitude-levels-panel'),levels=make('div',null,'cursed-aptitude-levels');
   for(const a of APTIDOES){const item=make('label',null,'cursed-aptitude-item'),inputLevel=make('input');inputLevel.type='number';inputLevel.min='0';inputLevel.step='1';inputLevel.value=char.aptidoes[a.id]||0;inputLevel.setAttribute('aria-label',`Nível de ${a.nome}`);inputLevel.onchange=()=>{char.aptidoes[a.id]=Math.max(0,Math.floor(Number(inputLevel.value)||0));handlers.save();};item.append(inputLevel,make('small',a.nome));levels.append(item);}aptLevels.append(levels);grid.append(aptLevels);
