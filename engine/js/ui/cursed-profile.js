@@ -27,7 +27,7 @@ export function renderCursedProfile(root,char,handlers){
   if(!restricted){const label=make('label','Atributo Principal','field'),select=make('select',null,'select');for(const key of ['forca','destreza','constituicao','inteligencia','sabedoria','presenca'])select.add(new Option(key,key));select.value=t.atributoChave||'presenca';select.onchange=()=>{t.atributoChave=select.value;handlers.save();render();};label.append(select);identity.append(label);}
   const techniques=restricted?t.tecnicas||[]:t.feiticos||[];
   const stats=make('div',null,'cursed-profile-stats');
-  for(const [label,value] of [['Feitiços Conhecidos',techniques.length],['CD Técnica',d.cdEspecializacao],...(!restricted?[['CD Amaldiçoada',d.cdAmaldicoado]]:[])]){const item=make('div');item.append(make('small',label),make('strong',String(value)));stats.append(item);}identity.append(stats);grid.append(identity);
+  for(const [label,value] of [[restricted?'Técnicas Marciais':'Feitiços Conhecidos',techniques.length],['CD Técnica',d.cdEspecializacao],...(!restricted?[['CD Amaldiçoada',d.cdAmaldicoado]]:[])]){const item=make('div');item.append(make('small',label),make('strong',String(value)));stats.append(item);}identity.append(stats);grid.append(identity);
 
   const apt=panel('Aptidões Amaldiçoadas','cursed-aptitudes');
   char.aptidoes.personalizadas ||= [];
@@ -41,8 +41,8 @@ export function renderCursedProfile(root,char,handlers){
   });
   const add=make('button','+ Adicionar aptidão','btn btn--subtle btn--sm');add.type='button';add.onclick=()=>{char.aptidoes.personalizadas.push({nome:'',atual:0,maximo:0,custo:''});handlers.save();render();};apt.append(table,add);grid.append(apt);
 
-  const list=panel(restricted?'Lista de Artes Marciais':'Lista de Artes Marciais','cursed-spells');const rows=make('div',null,'cursed-spell-levels');
-  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',`Arte Marcial Nível ${level}`));const found=techniques.filter(x=>Number(x.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'),make('p',technique.descricao||'Sem descrição.'));group.append(note);}rows.append(group);}list.append(rows);grid.append(list);
+  const list=panel(restricted?'Lista de Artes Marciais':'Feitiços Conhecidos','cursed-spells');const rows=make('div',null,'cursed-spell-levels');
+  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?`Arte Marcial Nível ${level}`:`Nível ${level}`));const found=techniques.filter(x=>Number(x.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'),make('p',technique.descricao||'Sem descrição.'));group.append(note);}rows.append(group);}list.append(rows);grid.append(list);
   const aptLevels=panel('Níveis de Aptidão','cursed-aptitude-levels-panel'),levels=make('div',null,'cursed-aptitude-levels');
   for(const a of APTIDOES){const item=make('label',null,'cursed-aptitude-item'),inputLevel=make('input');inputLevel.type='number';inputLevel.min='0';inputLevel.step='1';inputLevel.value=char.aptidoes[a.id]||0;inputLevel.setAttribute('aria-label',`Nível de ${a.nome}`);inputLevel.onchange=()=>{char.aptidoes[a.id]=Math.max(0,Math.floor(Number(inputLevel.value)||0));handlers.save();};item.append(inputLevel,make('small',a.nome));levels.append(item);}aptLevels.append(levels);grid.append(aptLevels);
 
