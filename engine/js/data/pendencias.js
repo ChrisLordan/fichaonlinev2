@@ -106,7 +106,7 @@ export function pendenciasPorNivel(char) {
 
   // 4. Aptidões amaldiçoadas (1 por nível, todas as especializações)
   const esperado = nivel;
-  if (aptidoes.length < esperado) {
+  if (idf.especializacao!=='Restringido' && aptidoes.length < esperado) {
     pendencias.push({
       tipo: "aptidao",
       texto: `${esperado - aptidoes.length} aptidão(ões) amaldiçoada(s) pendente(s) (1 por nível)`,

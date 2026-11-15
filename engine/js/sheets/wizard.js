@@ -519,6 +519,7 @@ export function renderWizard(app) {
     if (recalc.mudou) {
       char.pontos.pvAtual = char.pontos.pvMax;
       char.pontos.peAtual = char.pontos.peMax;
+      char.pontos.estaminaAtual = char.pontos.estaminaMax||0;
     }
 
     saveChar(char);

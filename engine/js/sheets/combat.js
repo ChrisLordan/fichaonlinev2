@@ -6,6 +6,7 @@ import { getChar, saveChar } from '../storage/cookies.js';
 import { CONDICOES, formatMod, modificador, derivar } from '../data/calculos.js';
 import { ESPECIALIZACOES } from '../data/especializacoes.js';
 import { toast } from '../ui/toast.js';
+import {resourcePoints,labelResources} from '../data/resources.js';
 import { getPreferences } from '../../../js/settings.js';
 window.addEventListener('jujutsu-preferences-changed',()=>{if(getPreferences().disableRollHistory){rollLog=[];renderLog();}});
 
@@ -61,7 +62,7 @@ function renderMain() {
   if (!main) return;
   const d = derivar(char);
   const esp = ESPECIALIZACOES.find(e => e.id === char.identificacao?.especializacao);
-  const p = char.pontos || {};
+  const p = resourcePoints(char);
   const idf = char.identificacao || {};
   const nivel = idf.nivel || 1;
   const modSab = d.mods.sabedoria;
@@ -184,6 +185,7 @@ function renderMain() {
   `;
 
   // Bind
+  labelResources(main,char);
   main.querySelectorAll("[data-dano]").forEach(btn => {
     btn.onclick = async () => {
       let v = btn.dataset.dano;
@@ -214,15 +216,15 @@ function renderMain() {
         if (!v) return;
         v = Number(v);
       } else v = Number(v);
-      char.pontos.peAtual = Math.max(0, Math.min(char.pontos.peMax, (char.pontos.peAtual || 0) + v));
+      resourcePoints(char).peAtual = Math.max(0, Math.min(resourcePoints(char).peMax, (resourcePoints(char).peAtual || 0) + v));
       saveChar(char);
       renderMain();
     };
   });
   main.querySelector("#pv-atual").onchange = (e) => { char.pontos.pvAtual = clamp(Number(e.target.value), 0, char.pontos.pvMax + (char.pontos.pvTemp || 0)); saveChar(char); renderMain(); };
   main.querySelector("#pv-max").onchange = (e) => { char.pontos.pvMax = Math.max(1, Number(e.target.value) || 1); saveChar(char); renderMain(); };
-  main.querySelector("#pe-atual").onchange = (e) => { char.pontos.peAtual = clamp(Number(e.target.value), 0, char.pontos.peMax + (char.pontos.peTemp || 0)); saveChar(char); renderMain(); };
-  main.querySelector("#pe-max").onchange = (e) => { char.pontos.peMax = Math.max(0, Number(e.target.value) || 0); saveChar(char); renderMain(); };
+  main.querySelector("#pe-atual").onchange = (e) => { resourcePoints(char).peAtual = clamp(Number(e.target.value), 0, resourcePoints(char).peMax + (resourcePoints(char).peTemp || 0)); saveChar(char); renderMain(); };
+  main.querySelector("#pe-max").onchange = (e) => { resourcePoints(char).peMax = Math.max(0, Number(e.target.value) || 0); saveChar(char); renderMain(); };
 
   main.querySelector("#rolar-iniciativa").onclick = () => {
     const btn = main.querySelector("#rolar-iniciativa");

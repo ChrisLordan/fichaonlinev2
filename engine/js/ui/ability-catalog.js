@@ -50,7 +50,7 @@ export async function renderAbilityCatalog(root,sheet,onChange=()=>{}){
       if(!mine.length)ownedPanel.append(make('p',search.value?'Nenhuma habilidade encontrada.':'Nenhuma habilidade adquirida.','text-soft text-sm'));
       for(const a of mine)ownedPanel.append(row(a));lists.append(ownedPanel);
       for(const name of names){
-        const section=make('section',null,'ability-group');section.append(make('h4',`${name} — Catálogo`),make('p',`${missingAbilityChoices(sheet,name)} escolha(s) disponível(is). Clique ou toque no nome para ver a nota e adicionar.`,'text-xs text-soft'));
+        const section=make('section',null,'ability-group');section.append(make('h4',`${name} — Catálogo`),make('p',`Aquisição livre de habilidades. O nível é informativo. Clique ou toque no nome para ver a nota e adicionar.`,'text-xs text-soft'));
         const rows=catalog.filter(a=>a.especializacao===name&&!owned.some(h=>h.catalogId===a.id)&&matchesAbility(a,search.value)).sort((a,b)=>(a.nivel??99)-(b.nivel??99)||a.nome.localeCompare(b.nome));
         if(!rows.length)section.append(make('p','Nenhuma habilidade encontrada.','text-soft text-sm'));
         for(const a of rows)section.append(row(a));lists.append(section);

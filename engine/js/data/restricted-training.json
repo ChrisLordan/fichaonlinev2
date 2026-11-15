@@ -1,0 +1,126 @@
+{
+  "gifts": [
+    {
+      "id": "Agilidade Exímia",
+      "nome": "Agilidade Exímia",
+      "descricao": "Uma leveza anormal e agilidade extrema são traços do seu\ncorpo. Sempre que fizer um teste de perícia ou resistência usando destreza, você\nrecebe um bônus de +2, além de receber 3 metros adicionais de movimento e\nsempre ignorar terreno difícil.",
+      "pagina": 126
+    },
+    {
+      "id": "Físico Robusto",
+      "nome": "Físico Robusto",
+      "descricao": "Seu corpo é naturalmente mais robusto e resistente a todo dano\nque seja causado nele. Você recebe redução de dano contra todo tipo, cujo valor é\nigual a metade do seu nível de personagem, além de receber um bônus de +2 em\ntestes de perícia ou resistência usando constituição.",
+      "pagina": 126
+    },
+    {
+      "id": "Força Devastadora",
+      "nome": "Força Devastadora",
+      "descricao": "Você foi dotado com uma força extrema, a qual permite que\nseus golpes sejam ainda mais potentes, assim como a capacidade física dos seus\nmúsculos. A distância de todo pulo ou salto que realizar aumenta em 3 metros, a\ndistância padrão que você empurra com a ação Empurrar aumenta em 4,5 metros\ne recebe +2 em testes de perícia usando Força.",
+      "pagina": 126
+    },
+    {
+      "id": "Indulgente a Feitiçaria",
+      "nome": "Indulgente a Feitiçaria",
+      "descricao": "Seu corpo recusa a energia amaldiçoada e,\nconsequentemente, as técnicas. Você recebe Redução de Dano contra danos provindo\nde técnicas ou aptidões amaldiçoadas igual à metade do seu nível de personagem e\num bônus de +1 em TRs de Vontade contra efeitos dessas mesmas fontes. No nível\n10, o bônus em TRs aumenta em +1 e, no nível 15, passa a contar também para\nFortitude e Reflexos.",
+      "pagina": 126
+    },
+    {
+      "id": "Mente Afiada",
+      "nome": "Mente Afiada",
+      "descricao": "Você tem uma mente afiada que o permite desenvolver habilidades\nfacilmente. Você se torna treinado em duas perícias adicionais e se torna mestre\nem uma perícia. Você também recebe um bônus de +2 em testes de perícia ou\nresistência usando inteligência.",
+      "pagina": 126
+    },
+    {
+      "id": "Percepção Aguçada",
+      "nome": "Percepção Aguçada",
+      "descricao": "Sua percepção e seus instintos são aguçados ao máximo,\npermitindo-o perceber cada detalhe dos seus arredores. Sua atenção aumenta em\num valor igual a metade do seu nível de personagem e você recebe um bônus de\n+3 em rolagens de percepção. Você também recebe um bônus de +2 em testes de\nperícia ou resistência usando sabedoria.",
+      "pagina": 126
+    },
+    {
+      "id": "Reposição Sanguinária",
+      "nome": "Reposição Sanguinária",
+      "descricao": "Você consegue repor o seu vigor a partir do sangue\nderramado. Sempre que um inimigo no qual você causou dano for morto, você\nrecupera 3 pontos de estamina. Você não pode exceder a quantidade de pontos que\npossuía no início do combate.",
+      "pagina": 126
+    },
+    {
+      "id": "Semblante Cativante",
+      "nome": "Semblante Cativante",
+      "descricao": "Um semblante mais cativante e chamativo foi lhe concedido,\napurando seu carisma e presença. Sempre que realizar um teste de perícia utilizando\nPresença, caso você tire um resultado inferior a metade do seu valor de Presença,\nvocê pode optar por tratar o resultado como metade do seu valor de Presença. Além\ndisso, você se torna mestre em uma perícia de Presença à sua escolha e recebe um\nbônus de +2 em testes de perícia usando Presença.",
+      "pagina": 126
+    },
+    {
+      "id": "Vigor Infindável",
+      "nome": "Vigor Infindável",
+      "descricao": "Você foi dotado de um vigor amplo e infindável e consegue o\nrepor ao triunfar. Seus pontos de vida máximos aumentam em um valor igual ao\nseu nível de personagem e, a cada 2 níveis, você recebe 1 ponto de estamina máximo\nadicional.",
+      "pagina": 126
+    }
+  ],
+  "trainings": [
+    {
+      "id": "agilidade",
+      "nome": "Treino De Agilidade",
+      "desc": "O treino de agilidade tem como foco ampliar na velocidade, movimento e capacidade\nde resposta, deixando-o mais ágil.\nEtapa de Treino Foco(s) Requisitos Benefícios\nSeu Deslocamento aumenta em\n1° Etapa 1 -\n1,5 metros.\nVocê recebe um bônus de +2 em\n2° Etapa 1 -\nrolagens de Acrobacia.\nVocê recebe um bônus de +2 em\n3° Etapa 1 Destreza 14\nrolagens de Iniciativa.\nVocê recebe um bônus de +2 em\n4° Etapa 2 Destreza 16\nrolagens de Reflexos.\nBônus de Treinamento Completo\nCom grande velocidade e agilidade, você se torna rápido e capaz de um nível\nsuperior de mobilidade e esquivas. Sua margem necessária para conseguir um\nsucesso crítico em um TR de Reflexos reduz em 2. Seu Deslocamento aumenta em 4,5\nmetros.",
+      "pagina": 339
+    },
+    {
+      "id": "barreiras",
+      "nome": "Treino De Barreiras",
+      "desc": "O treino de barreiras desenvolve a resistência e excelência do ramo de aptidões\namaldiçoadas que envolvem as barreiras.\nEtapa de Treino Foco(s) Requisitos Benefícios\nOs pontos de vida das paredes\nTécnicas de\n1° Etapa 1 da sua Técnica de Barreira\nBarreira\naumentam em 10.\nSeu Nível de Aptidão em\n2° Etapa 1 -\nBarreiras aumenta em 1.\nOs pontos de vida das paredes\nNível de Aptidão\n3° Etapa 1 da sua Técnica de Barreira\nem Barreiras 2\naumentam em 10.\nAo utilizar Técnicas de Barreira,\nNível de Aptidão\n4° Etapa 2 o máximo de paredes que você\nem Barreiras 3\npode criar aumenta em 2.\nBônus de Treinamento Completo\nVocê domina a técnica de barreiras, conseguindo as conferir uma resistência\nelevada. Toda parede que você criar com Técnicas de Barreira recebe RD igual ao\nseu Nível de Aptidão em Barreiras.",
+      "pagina": 339
+    },
+    {
+      "id": "compreensao",
+      "nome": "Treino De Compreensão",
+      "desc": "O treino de compreensão permite ao feiticeiro se aprofundar na essência da energia,\ncompreendendo-a cada vez mais.\nEtapa de Treino Foco(s) Requisitos Benefícios\nSeu máximo de energia\n1° Etapa 1 -\namaldiçoada aumenta em 2.\nVocê recebe um bônus de +1\n2° Etapa 1 - em rolagens de Feitiçaria e\nOcultismo.\nNível de Aptidão Seu máximo de energia\n3° Etapa 1\nem Aura 2 amaldiçoada aumenta em 3.\nVocê recebe um bônus de +2\nNível de Aptidão\n4° Etapa 2 em rolagens de Feitiçaria e\nem Aura 3\nOcultismo.\nBônus de Treinamento Completo\nVocê chega muito perto de compreender profundamente a energia amaldiçoada,\ntornando-se familiar com ela e entendendo melhor uma parte dela. Você aumenta\num nível de aptidão a sua escolha em 1.",
+      "pagina": 340
+    },
+    {
+      "id": "controleEnergia",
+      "nome": "Treino De Controle De Energia",
+      "desc": "O treino de controle de energia é um extenso processo para conseguir melhorar a\nadministração e produção de energia amaldiçoada do feiticeiro.\nEtapa de Treino Foco(s) Requisitos Benefícios\nSeu máximo de energia\n1° Etapa 1 -\namaldiçoada aumenta em 2.\nQuando uma cena de combate\niniciar, você recebe 4 pontos\n2° Etapa 1 -\nde energia amaldiçoada\ntemporários.\nNível de Aptidão\nSeu máximo de energia\n3° Etapa 1 em Controle e\namaldiçoada aumenta em 3.\nLeitura 2\nNível de Aptidão Seu Nível de Aptidão em\n4° Etapa 2 em Controle e Controle e Leitura aumenta em\nLeitura 3 1.\nBônus de Treinamento Completo\nVocê já estabeleceu uma profunda conexão com a energia amaldiçoada, assim\ncomo a conhece cada vez mais completamente. Em uma situação de combate,\nimerso no fervor da batalha, você consegue gerar energia: durante uma cena de\ncombate, no começo de toda rodada, você ganha PE temporário igual a metade do\nseu bônus de treinamento.",
+      "pagina": 340
+    },
+    {
+      "id": "treinoDominios",
+      "nome": "Treino De Domínios",
+      "desc": "O treino de domínios é uma sequência de passos para refinar as manifestações do\npróprio domínio, aperfeiçoando ainda mais aquela técnica dita como o pináculo da\nfeitiçaria.\nEtapa de Treino Foco(s) Requisitos Benefícios\nExpansão Você recebe um bônus de +1\n1° Etapa 1 de Domínio em rolagens para confrontos e\nIncompleta contestações de expansões.\nA área da sua Expansão de\n2° Etapa 1 -\nDomínio aumenta em 3 metros.\nExpansão Você recebe um bônus de +1\n3° Etapa 1 de Domínio em rolagens para confrontos e\nCompleta contestações de expansões.\nVocê pode colocar um efeito\nNível de Aptidão\n4° Etapa 2 adicional em sua expansão de\nem Domínio 5\ndomínio.\nBônus de Treinamento Completo\nVocê se torna um mestre das expansões, entendo o como conseguir a moldar\nperfeitamente diante a sua vontade e necessidade do momento. Você recebe a\naptidão amaldiçoada Modificação Completa.\nMODIFICAÇÃO COMPLETA\nSeu controle sobre os domínios é tão refinado que, mesmo no imediato momento de\nexpandir seu domínio, você consegue o modificar. Ao utilizar uma expansão de domínio,\nvocê pode aplicar as seguintes modificações:\n• Inversão de Resistência. Você inverte a resistência interna e externa da sua\nexpansão de domínio, conseguindo lidar melhor com ataques que venham de fora.\nAo utilizar essa modificação, troque os pontos de vida do lado interno pelos do lado\nexterno.\n• Mudança de Tamanho. Você muda e controla o tamanho da expansão. Você\npode expandir ou encolher o espaço da expansão: para cada 1,5m que encolher\na expansão, ela recebe 20 pontos de vida adicionais em sua resistência interna e\nexterna; para cada 1,5m que expandir, a resistência interna e externa diminui em\n20 pontos de vida. Uma expansão não pode ser encolhida para menos de 3 metros e\nnem expandida para mais que o triplo do tamanho comum. Ambas as mudanças de\ntamanho são consideradas na área da expansão, a qual por padrão é de 9 metros.",
+      "pagina": 341
+    },
+    {
+      "id": "energiaReversa",
+      "nome": "Treino De Energia Reversa",
+      "desc": "O treino de energia reversa permite se aprimorar no uso da energia positiva, capaz de\ncurar humanos e destruir maldições, sendo o completo oposto da energia amaldiçoada.\nEtapa de Treino Foco(s) Requisitos Benefícios\nA quantidade de pontos de\nenergia reversa que você pode\n1° Etapa 1 Energia Reversa\ngastar em Aptidões de Energia\nReversa aumenta em 1.\nSeu Nível de Aptidão em\n2° Etapa 1 -\nEnergia Reversa aumenta em 1.\nO custo para regenerar um\nNível de Aptidão membro ou ferida interna\n3° Etapa 1 em Energia com Regeneração Aprimorada\nReversa 4 é reduzido em 2 pontos de\nenergia reversa.\nVocê também pode usar Fluxo\nNível de Aptidão\nConstante para regenerar\n4° Etapa 2 em Energia\nmembros, ao invés de apenas se\nReversa 5\ncurar.\nBônus de Treinamento Completo\nSua maestria sobre a energia reversa te permite recuperar até mesmo aquilo que\nparece impossível: você pode usar a aptidão amaldiçoada Regeneração Aprimorada\npara curar sua exaustão de técnica após usar expansão de domínio, reduzindo em\num turno para 2 pontos de energia reversa gastos.",
+      "pagina": 342
+    },
+    {
+      "id": "luta",
+      "nome": "Treino De Luta",
+      "desc": "O treino de luta foca em praticar e dominar meios de conseguir lutar, melhorando os\ngolpes desarmados, guarda e fundamentos da luta.\nEtapa de Treino Foco(s) Requisitos Benefícios\nO dano de seus ataques\n1° Etapa 1 - desarmados aumenta em 1\nnível.\nVocê recebe +2 em sua Defesa\n2° Etapa 1 - e em rolagens para as ações\nAgarrar, Derrubar e Empurrar.\nO dano de seus ataques\nForça ou\n3° Etapa 1 desarmados aumenta em 1\nDestreza 14\nnível.\nO dano de seus ataques\nForça ou\n4° Etapa 2 desarmados aumenta em 2\nDestreza 16\nníveis.\nBônus de Treinamento Completo\nVocê se torna altamente proficiente em luta, conseguindo extrair ao máximo de seu\ncorpo e manobras. Você recebe acesso ao efeito de crítico de ataques desarmados\n(pugilato). Além disso, você pode, uma vez por rodada, escolher realizar uma\nrolagem de Acrobacia ou Atletismo com vantagem.",
+      "pagina": 343
+    },
+    {
+      "id": "manejoArma",
+      "nome": "Treino De Manejo De Arma",
+      "desc": "O treino de manejo de arma permite ao feiticeiro se tornar mestre em uma arma\nespecífica, elevando seu nível de manejo com ela.\nEste treinamento pode ser repetido, mas escolhendo uma arma diferente, a qual ainda\nnão tenha sido treinada.\nEtapa de Treino Foco(s) Requisitos Benefícios\nEscolha uma arma específica:\nvocê se torna treinado com ela.\n1° Etapa 1 -\nCaso já seja, adicione +2 em\nrolagens de dano com ela.\nVocê recebe um bônus de +1 em\n2° Etapa 1 - jogadas de ataque com a arma\nescolhida.\nEnquanto estiver manejando\n3° Etapa 1 - a arma escolhida, você recebe\nacesso ao efeito crítico dela.\nVocê recebe +1 em jogadas de\n4° Etapa 2 - ataque e +2 em rolagens de\ndano com a arma escolhida.\nBônus de Treinamento Completo\nVocê se torna um mestre no manejo da arma para qual se dedicou a treinar\ne dominar. Enquanto estiver manejando a arma escolhida, ela recebe um\nEncantamento de ferramenta amaldiçoada adicional.",
+      "pagina": 344
+    },
+    {
+      "id": "pericia",
+      "nome": "Treino De Perícia",
+      "desc": "O treino de perícia envolve o domínio de uma habilidade específica, permitindo ao\nfeiticeiro dominá-la em níveis superiores.\nEste treinamento pode ser repetido, mas escolhendo uma perícia diferente, a qual\nainda não tenha sido treinada.\nEtapa de Treino Foco(s) Requisitos Benefícios\nEscolha uma perícia: você se\ntorna treinado nela. Caso já seja,\n1° Etapa 1 -\nadicione +1 em testes de perícia\nusando-a.\nDuas vezes por descanso, você\npode escolher realizar um teste\n2° Etapa 1 -\nda perícia escolhida para o\ntreinamento com vantagem.\nVocê se torna mestre na\nperícia escolhida. Caso já seja,\n3° Etapa 1 -\nadicione +2 em testes de perícia\nusando-a.\nUma vez por cena, você pode\nescolher obter um sucesso\n4° Etapa 2 - garantido em um teste da\nperícia escolhida, desde que não\nseja um teste oposto.\nBônus de Treinamento Completo\nVocê treinou e se dedicou tanto a uma perícia específica, que ela se tornou algo no\nqual você é quase incapaz de falhar, mantendo uma consistência invejável. Caso\nrealize um teste da perícia escolhida e obtenha um resultado menor do que 5 no d20,\nvocê pode o rolar novamente e manter o melhor resultado.",
+      "pagina": 345
+    },
+    {
+      "id": "potencialFisico",
+      "nome": "Treino De Potencial Físico",
+      "desc": "O treino de potencial físico tem como objetivo extrair todo potencial físico que um\ncorpo afetado pela restrição celestial possui. Este treino só pode ser realizado por\nRestringidos, além de poder utilizar qualquer atributo físico nas rolagens.\nEtapa de Treino Foco(s) Requisitos Benefícios\nSeu máximo de pontos de\n1° Etapa 1 -\nestamina aumenta em 2.\nVocê recebe 2 pontos de\nNível 4 de\n2° Etapa 1 atributo para distribuir entre\nPersonagem\nseus atributos físicos.\nSeu máximo de pontos de\n3° Etapa 1 -\nestamina aumenta em 4.\nVocê recebe uma Dádiva do Céu\n4° Etapa 2 -\nadicional.\nBônus de Treinamento Completo\nVocê conseguiu chegar em um ponto onde seu corpo constantemente se renova e\nsua energia parece nunca ter fim. Durante uma cena de combate, no começo de toda\nrodada, você recebe uma quantidade de pontos de estamina temporários igual a\nmetade do seu bônus de treinamento.",
+      "pagina": 346
+    },
+    {
+      "id": "treinoResistencia",
+      "nome": "Treino De Resistência",
+      "desc": "O treino de resistência eleva o físico do feiticeiro, deixando-o mais resistente, vigoroso\ne aumentando a sua estamina.\nEtapa de Treino Foco(s) Requisitos Benefícios\nSeus pontos de vida máximos\n1° Etapa 1 -\naumentam em 4.\nSua quantidade de dados de\n2° Etapa 1 - vida disponíveis por descanso\naumenta em 2.\nRecebe um bônus de +2 em\n3° Etapa 1 Constituição 14\nrolagens de Fortitude.\nSeus pontos de vida máximos\n4° Etapa 2 Constituição 16\naumentam em 6.\nBônus de Treinamento Completo\nSeu físico atinge um nível superior, concedendo-o uma grande resistência e vigor.\nSua margem necessária para conseguir um sucesso crítico em um TR de Fortitude\nreduz em 2. Uma vez por cena, você ignora a primeira falha em testes de morte. Seus\npontos de vida máximos aumentam em mais 10 pontos.",
+      "pagina": 346
+    }
+  ]
+}

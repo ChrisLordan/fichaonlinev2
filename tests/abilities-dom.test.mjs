@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 let JSDOM;
 try{({JSDOM}=createRequire(import.meta.url)('jsdom'));}catch{({JSDOM}=createRequire(new URL('../.test-runtime/package.json',import.meta.url))('jsdom'));}
 const dom=new JSDOM('<div id="app"></div><div id="modal-container"></div><div id="toast-container"></div>',{url:'http://localhost/sistema.html#/character/test',pretendToBeVisual:true});
-for(const name of ['window','document','Node','MutationObserver','localStorage','sessionStorage','location','HTMLElement'])globalThis[name]=dom.window[name];
+for(const name of ['window','document','Node','Option','MutationObserver','localStorage','sessionStorage','location','HTMLElement'])globalThis[name]=dom.window[name];
 globalThis.requestAnimationFrame=dom.window.requestAnimationFrame.bind(dom.window);globalThis.cancelAnimationFrame=dom.window.cancelAnimationFrame.bind(dom.window);window.matchMedia=()=>({matches:false});
 globalThis.fetch=async url=>({ok:true,json:async()=>JSON.parse(await readFile(url,'utf8'))});
 const {createEmpty,saveChar}=await import('../engine/js/storage/cookies.js');
@@ -18,6 +18,10 @@ for(const origin of ['Inato','Herdado','Derivado','Feto Amaldiçoado Híbrido','
  const body=document.querySelector('#section-modal-body');assert.ok(!body.textContent.includes('Erro ao carregar'),body.textContent);
  assert.ok(body.querySelector('[data-sub="especializacao"]'),'Sub-abas ausentes');body.querySelector('[data-sub="especializacao"]').click();await wait(100);
  assert.ok(body.querySelector('.ability-name'),`Catálogo ausente para ${spec}: ${body.textContent}`);
+ if(spec==='Restringido'){
+  body.querySelector('[data-sub="aptidoes"]').click();await wait(100);assert.ok(body.textContent.includes('Dádivas do Céu'));assert.equal(body.querySelectorAll('details').length,9);
+  body.querySelector('[data-sub="treinamentos"]').click();await wait(100);assert.equal(body.querySelectorAll('details').length,11);
+ }
  document.querySelector('.modal__header button').click();cleanup();
  console.log(`${origin} / ${spec}: Habilidades e catálogo OK`);
 }

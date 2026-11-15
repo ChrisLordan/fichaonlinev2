@@ -8,9 +8,10 @@ syncBaseAbilities(sheet,catalog);const count=sheet.especializacaoDetalhes.habili
 assert.ok(sheet.especializacaoDetalhes.habilidades.some(a=>a.nome==='Reflexo Evasivo'));
 const aparar=catalog.find(a=>a.nome==='APARAR ATAQUE'&&a.especializacao==='Lutador');
 assert.equal(missingAbilityChoices(sheet,'Lutador'),1);assert.ok(pendenciasPorNivel(sheet).some(p=>p.tipo==='habilidade'));
-const future=catalog.find(a=>a.tipo==='Escolha'&&a.especializacao==='Lutador'&&a.nivel===16);assert.throws(()=>addAbility(sheet,future));
+const future=catalog.find(a=>a.tipo==='Escolha'&&a.especializacao==='Lutador'&&a.nivel===16);assert.equal(abilityBlockReason(sheet,future),'');
 const other=catalog.find(a=>a.tipo==='Escolha'&&a.especializacao==='Suporte');assert.throws(()=>addAbility(sheet,other));
 addAbility(sheet,aparar);assert.equal(missingAbilityChoices(sheet,'Lutador'),0);assert.ok(!pendenciasPorNivel(sheet).some(p=>p.tipo==='habilidade'));assert.throws(()=>addAbility(sheet,aparar));
 sheet.especializacaoDetalhes.habilidades=sheet.especializacaoDetalhes.habilidades.filter(a=>a.catalogId!==aparar.id);assert.equal(missingAbilityChoices(sheet,'Lutador'),1);
 const restored=JSON.parse(JSON.stringify(sheet));assert.equal(abilityBlockReason(restored,aparar),'');
+addAbility(restored,aparar);addAbility(restored,future);assert.ok(restored.especializacaoDetalhes.habilidades.some(a=>a.catalogId===future.id));
 console.log('Habilidades: especialização, nível, duplicação, limites, benefícios-base e pendências OK.');

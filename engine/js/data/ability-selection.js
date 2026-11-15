@@ -8,10 +8,8 @@ export function missingAbilityChoices(sheet,name){return Math.max(0,specializati
 export function abilityBlockReason(sheet,ability){
   const level=specializationLevel(sheet,ability.especializacao);
   if(!level)return 'Esta especialização não pertence ao personagem.';
-  if(ability.nivel>level)return `Requer nível ${ability.nivel} de ${ability.especializacao}.`;
   if((sheet.especializacaoDetalhes?.habilidades||[]).some(h=>h.catalogId===ability.id))return 'Habilidade já adicionada.';
   if(ability.tipo!=='Escolha')return 'Benefício-base ou regra complementar.';
-  if(!missingAbilityChoices(sheet,ability.especializacao))return 'Todas as escolhas de habilidade disponíveis foram preenchidas.';
   return '';
 }
 export function addAbility(sheet,ability){

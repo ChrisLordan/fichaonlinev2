@@ -13,6 +13,9 @@ import { PERICIAS, TESTES_RESISTENCIA, TIPOS_DANO, CONDICOES, modificador, forma
 import { toast } from '../ui/toast.js';
 import { CUSTOM_ORIGIN, customOriginForm } from '../ui/custom-origin.js';
 import { renderAbilityCatalog } from '../ui/ability-catalog.js';
+import {isRestricted,resourcePoints,labelResources} from '../data/resources.js';
+import {renderMartial,renderGifts,renderTraining} from '../ui/restricted.js';
+import {renderAttackChecks} from '../ui/attack-checks.js';
 import { confirmDialog, promptDialog, openModal, alertDialog, el } from '../ui/modais.js';
 
 const FAB_SECTIONS = [
@@ -60,6 +63,7 @@ export function renderEditor(app, id) {
     return;
   }
   migrarEspecializacoes(data);
+  recalcularPontos(data);
   state = data;
 
   app.innerHTML = `
@@ -102,7 +106,7 @@ export function renderEditor(app, id) {
         ${FAB_SECTIONS.map(s => `
           <button class="fab-item" data-section="${s.id}">
             <span class="fab-item__icon" aria-hidden="true">${s.icon}</span>
-            <span>${s.label}</span>
+            <span>${s.id==='tecnica'&&isRestricted(state)?'Estilo e Técnicas Marciais':s.label}</span>
           </button>
         `).join("")}
       </div>
@@ -130,6 +134,7 @@ export function renderEditor(app, id) {
 }
 
 function renderTab(tab, container) {
+  try{
   if (tab === "ident") return renderIdentificacao(container);
   if (tab === "aspectos") return renderAspectos(container);
   if (tab === "atributos") return renderAtributos(container);
@@ -140,6 +145,7 @@ function renderTab(tab, container) {
   if (tab === "habilidades") return renderHabilidades(container);
   if (tab === "inventario") return renderInventario(container);
   if (tab === "anotacoes") return renderAnotacoes(container);
+  }finally{labelResources(container,state);}
 }
 
 /* =========================================================
@@ -151,7 +157,7 @@ function renderVisaoCentral(container) {
   if (!container) return;
   const idf = state.identificacao = state.identificacao || {};
   const atr = state.atributos = state.atributos || {};
-  const p = state.pontos = state.pontos || {};
+  const p = resourcePoints(state);
   const d = derivar(state);
   const nivel = idf.nivel || 1;
   const btInfo = infoBonusTreinamento(nivel);
@@ -167,8 +173,8 @@ function renderVisaoCentral(container) {
   ];
 
   const pericias = state.pericias || {};
-  const periciaRows = PERICIAS.map(per => {
-    const pd = pericias[per.id] || {};
+  const periciaRows = [...PERICIAS,...TESTES_RESISTENCIA.map(p=>({...p,tr:true}))].map(per => {
+    const pd = (per.tr?state.testesResistencia:pericias)?.[per.id] || {};
     const mod = d.mods[per.atributo] || 0;
     const tot = totalPericia({
       modAtributo: mod,
@@ -183,7 +189,7 @@ function renderVisaoCentral(container) {
     if (pd.mestre) tags.push('<span class="tag" style="font-size:9px;padding:1px 5px;background:color-mix(in srgb, var(--site-color-4ade80, #4ade80) 15%, transparent);border-color:color-mix(in srgb, var(--site-color-4ade80, #4ade80) 30%, transparent);color:var(--success);">M</span>');
     return `
       <button type="button" class="visao-pericia roll-trigger" data-roll-name="${escapeHtml(per.nome)}" data-roll-bonus="${tot}" title="Rolar ${escapeHtml(per.nome)}">
-        <span class="visao-pericia__nome">${per.nome}</span>
+        <span class="visao-pericia__nome">${per.nome}${per.tr?' (TR)':''}</span>
         <span class="visao-pericia__total">${formatMod(tot)}</span>
         <span class="visao-pericia__tags">${tags.join("")}</span>
       </button>
@@ -194,7 +200,7 @@ function renderVisaoCentral(container) {
   const ataques = state.ataques || [];
   const atkRows = ataques.map(a => {
     const mod = d.mods[a.atributo] || 0;
-    const bonus = mod + (a.bonus || 0) + bonusTreinamento(nivel);
+    const bonus = mod + (a.bonus || 0) + bonusTreinamento(nivel) + Math.floor(nivel/2);
     return `
       <div class="visao-atk">
         <div>
@@ -393,6 +399,7 @@ function renderVisaoCentral(container) {
   `;
 
   // Atributos editáveis na visão central
+  renderAttackChecks(container.querySelector('.visao-central'),state,scheduleSave);
   bindAtributoInputs(container, () => {
     renderVisaoCentral(container);
   });
@@ -404,6 +411,7 @@ function renderVisaoCentral(container) {
   // Botões de temp (PV/PE)
   bindTempButtons(container, "pv");
   bindTempButtons(container, "pe");
+  labelResources(container,state);
 }
 
 /* =========================================================
@@ -435,7 +443,7 @@ function bindFab(app, id) {
 }
 
 function openSectionModal(sec, id) {
-  const label = FAB_SECTIONS.find(s => s.id === sec)?.label || sec;
+  const label = sec==='tecnica'&&isRestricted(state)?'Estilo e Técnicas Marciais':FAB_SECTIONS.find(s => s.id === sec)?.label || sec;
   const wrap = document.createElement("div");
   wrap.id = "section-modal-body";
   wrap.style.minHeight = "60vh";
@@ -522,7 +530,7 @@ function renderIdentificacao(container) {
     fieldInput("Origem", "origem", idf.origem, "select", null, { options: ORIGENS.map(o => o.nome) }),
     fieldInput("Especialização", "especializacao", idf.especializacao, "select", null, { options: opcoesEspecializacaoParaOrigem(idf.origem) }),
     fieldInput("Clã (se Herdado)", "clan", idf.clan, "select", null, { options: ["", ...CLANS.map(c => c.nome)] }),
-    fieldInput("Técnica Amaldiçoada", "tecnica", idf.tecnica, "text", "Proporções, Dez Sombras…"),
+    fieldInput(isRestricted(state)?"Estilo Marcial":"Técnica Amaldiçoada", "tecnica", idf.tecnica, "text", isRestricted(state)?"Nome do estilo":"Proporções, Dez Sombras…"),
   ];
 
   // Lista de especializações (multiclasse)
@@ -924,7 +932,7 @@ function attrCard(id, label, val, mod) {
    ========================================================= */
 
 function renderRecursos(container) {
-  const p = state.pontos || {};
+  const p = resourcePoints(state);
   const idf = state.identificacao || {};
   const modCon = modificador(state.atributos?.constituicao || 10);
   const esp = ESPECIALIZACOES.find(e => e.id === idf.especializacao);
@@ -1012,8 +1020,8 @@ function renderRecursos(container) {
           if (k === "max") { state.pontos.pvMax = v; state.pontos.integridadeMax = v; }
           if (k === "temp") setTempHP(state, v);
         } else if (prefix === "pe") {
-          if (k === "atual") state.pontos.peAtual = v;
-          if (k === "max") state.pontos.peMax = v;
+          if (k === "atual") resourcePoints(state).peAtual = v;
+          if (k === "max") resourcePoints(state).peMax = v;
           if (k === "temp") setTempPE(state, v);
         } else if (prefix === "ia") {
           if (k === "atual") state.pontos.integridadeAtual = v;
@@ -1055,7 +1063,7 @@ function renderPericias(container) {
     let total = mod;
     if (p.treino) total += prof;
     if (p.mestre) total += Math.floor(prof / 2);
-    if (p.treino) total += Math.floor(nivel / 2);
+    total += Math.floor(nivel / 2);
     total += p.outros || 0;
     return total;
   }
@@ -1064,7 +1072,7 @@ function renderPericias(container) {
     let total = 0;
     if (t.treino) total += prof;
     if (t.mestre) total += Math.floor(prof / 2);
-    if (t.treino) total += Math.floor(nivel / 2);
+    total += Math.floor(nivel / 2);
     total += t.outros || 0;
     return total;
   }
@@ -1089,7 +1097,7 @@ function renderPericias(container) {
   const trHTML = TESTES_RESISTENCIA.map(t => {
     if (!state.testesResistencia[t.id]) state.testesResistencia[t.id] = { treino: false, mestre: false, outros: 0 };
     const v = state.testesResistencia[t.id];
-    const total = calcTR(v);
+    const total = calcTR(v, t.atributo);
     return `
       <tr>
         <td><button type="button" class="roll-trigger" data-roll-name="TR: ${escapeHtml(t.nome)}" data-roll-bonus="${total}">${t.nome} ⚄</button></td>
@@ -1168,7 +1176,7 @@ function renderAtaques(container) {
   function calcAtaque(at) {
     const mod = d.mods[at.atributo] || 0;
     const prof = d.prof;
-    return formatMod(mod + prof + (at.bonus || 0));
+    return formatMod(mod + prof + Math.floor(nivel/2) + (at.bonus || 0));
   }
 
   const ataqHTML = state.ataques.map((at, i) => `
@@ -1284,6 +1292,7 @@ function renderAtaques(container) {
    ========================================================= */
 
 function renderTecnica(container) {
+  if(isRestricted(state)){renderMartial(container,state,()=>{recalcularPontos(state);scheduleSave();});return;}
   if (!state.tecnica) state.tecnica = { nome: "", atributoChave: "presenca", descricao: "", maxTecnicas: 1, feiticos: [], expansaoDominio: { nome: "", tipo: "", tecnicaGarantida: false, descricao: "" } };
 
   const t = state.tecnica;
@@ -1439,7 +1448,7 @@ function renderHabilidades(container) {
     container.innerHTML = `
       <div class="subtabs" id="hab-subtabs">
         ${["origem", "especializacao", "talentos", "aptidoes", "treinamentos"].map(s => `
-          <button class="subtab" data-sub="${s}" aria-current="${state_local.current === s ? "true" : "false"}">${s.charAt(0).toUpperCase() + s.slice(1)}</button>
+          <button class="subtab" data-sub="${s}" aria-current="${state_local.current === s ? "true" : "false"}">${s==='aptidoes'&&isRestricted(state)?'Dádivas do Céu':s.charAt(0).toUpperCase() + s.slice(1)}</button>
         `).join("")}
       </div>
       <div id="hab-body"></div>
@@ -1557,7 +1566,7 @@ function renderHabilidades(container) {
         <div class="grid grid-3 text-xs">
           <div><span class="text-mute">PV inicial:</span> <strong>${esp.pvInicialBase} + mod.Con</strong></div>
           <div><span class="text-mute">Dado de vida:</span> <strong>d${esp.dadoVida}</strong></div>
-          <div><span class="text-mute">PE por nível:</span> <strong>${esp.pePorNivel}${esp.somaModificadorNoPE ? " + mod.atributo (1ª vez)" : ""}</strong></div>
+          <div><span class="text-mute">${isRestricted(state)?'Estamina':'PE'} por nível:</span> <strong>${isRestricted(state)?4:esp.pePorNivel}${esp.somaModificadorNoPE ? " + mod.atributo (1ª vez)" : ""}</strong></div>
         </div>
         ${estilosOpcoes.length > 0 ? `
           <hr>
@@ -1702,6 +1711,7 @@ function renderHabilidades(container) {
   }
 
   function renderAptidoes(body) {
+    if(isRestricted(state)){renderGifts(body,state,()=>{recalcularPontos(state);scheduleSave();}).catch(e=>body.textContent=e.message);return;}
     if (!state.aptidoes) state.aptidoes = { aura: 0, controle: 0, dominio: 0, barreira: 0, energiaReversa: 0, completas: {} };
 
     body.innerHTML = `
@@ -1758,6 +1768,7 @@ function renderHabilidades(container) {
   }
 
   function renderTreinamentos(body) {
+    renderTraining(body,state,()=>{recalcularPontos(state);scheduleSave();}).catch(e=>body.textContent=e.message);return;
     if (!state.treinamentos) state.treinamentos = {};
     body.innerHTML = `
       <div class="card">
@@ -2253,7 +2264,7 @@ function bindStepButtons(container, prefix, maxKey, currentKey) {
   container.querySelectorAll(`[data-${prefix}-step]`).forEach(btn => {
     btn.addEventListener("click", () => {
       const step = Number(btn.dataset[`${prefix}Step`]);
-      const p = state.pontos = state.pontos || {};
+      const p = resourcePoints(state);
       const max = (p[maxKey] || 0) + (p[prefix + "Temp"] || 0);
       const atual = p[currentKey] || 0;
       const novo = atual + step;
@@ -2283,7 +2294,7 @@ function bindTempButtons(container, prefix) {
   container.querySelectorAll(`[data-temp-${prefix}-step]`).forEach(btn => {
     btn.addEventListener("click", () => {
       const step = Number(btn.dataset[`temp${prefix.toUpperCase()}Step`]);
-      const p = state.pontos = state.pontos || {};
+      const p = resourcePoints(state);
       const atual = p[prefix + "Temp"] || 0;
       const novo = Math.max(0, atual + step);
       const result = prefix === "pv" ? setTempHP(state, novo) : setTempPE(state, novo);
@@ -2329,5 +2340,5 @@ function recarregarTudoAposNivel() {
   const pvMaxEl = document.getElementById("pv-max");
   if (pvMaxEl) pvMaxEl.value = state.pontos.pvMax;
   const peMaxEl = document.getElementById("pe-max");
-  if (peMaxEl) peMaxEl.value = state.pontos.peMax;
+  if (peMaxEl) peMaxEl.value = resourcePoints(state).peMax;
 }

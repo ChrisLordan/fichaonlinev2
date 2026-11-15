@@ -130,7 +130,7 @@ export function totalPericia({ modAtributo, treinado = false, mestre = false, ni
   if (treinado) total += prof;
   if (mestre) total += Math.floor(prof / 2);
   // Bônus de metade do nível para perícias treinadas
-  if (treinado) total += Math.floor(nivel / 2);
+  total += Math.floor(nivel / 2);
   total += outros;
   return total;
 }
@@ -244,6 +244,9 @@ export function calcularPVTotal(char) {
     const isPrimaria = i === 0;
     total += pvPorEspecializacao(esp, item.nivel, modCon, isPrimaria);
   }
+  if(char.dadivas?.includes('Vigor Infindável'))total+=Number(char.identificacao.nivel);
+  const resistance=char.treinamentos?.treinoResistencia||[];
+  total+=(resistance[0]?4:0)+(resistance[3]?6:0)+(resistance[4]?10:0);
   return total;
 }
 
@@ -261,6 +264,7 @@ export function calcularPETotal(char) {
     const isPrimaria = i === 0;
     total += pePorEspecializacao(esp, item.nivel, modChave, isPrimaria);
   }
+  if(char.identificacao?.especializacao!=='Restringido')for(const key of ['compreensao','controleEnergia'])total+=(char.treinamentos?.[key]?.[0]?2:0)+(char.treinamentos?.[key]?.[2]?3:0);
   return total;
 }
 
@@ -285,7 +289,7 @@ export function recalcularPontos(char) {
   p.peMax = peMaxNovo;
   // PDF v2.5.2, p.114: Restringido usa 4 pontos de Estamina por nível.
   const restrito = char.identificacao?.especializacao === 'Restringido';
-  p.estaminaMax = restrito ? 4 * char.identificacao.nivel : 0;
+  p.estaminaMax = restrito ? 4 * char.identificacao.nivel + (char.treinamentos?.potencialFisico?.[0]?2:0)+(char.treinamentos?.potencialFisico?.[2]?4:0)+(char.dadivas?.includes('Vigor Infindável')?Math.floor(char.identificacao.nivel/2):0) : 0;
   p.estaminaAtual = Math.min(p.estaminaAtual || 0, p.estaminaMax);
 
   if ((p.pvAtual || 0) > pvMaxNovo) p.pvAtual = pvMaxNovo;
@@ -304,14 +308,9 @@ export function recalcularPontos(char) {
 
 export const PERICIAS = [
   { id: "atletismo", nome: "Atletismo", atributo: "forca" },
-  { id: "luta", nome: "Luta", atributo: "forca" },
   { id: "acrobacia", nome: "Acrobacia", atributo: "destreza" },
   { id: "furtividade", nome: "Furtividade", atributo: "destreza" },
-  { id: "pontaria", nome: "Pontaria", atributo: "destreza" },
   { id: "prestidigitacao", nome: "Prestidigitação", atributo: "destreza" },
-  { id: "fortitude", nome: "Fortitude", atributo: "constituicao", tr: true },
-  { id: "integridade", nome: "Integridade", atributo: "constituicao", tr: true },
-  { id: "astucia", nome: "Astúcia", atributo: "inteligencia", tr: true },
   { id: "feiticaria", nome: "Feitiçaria", atributo: "inteligencia" },
   { id: "historia", nome: "História", atributo: "inteligencia" },
   { id: "investigacao", nome: "Investigação", atributo: "inteligencia" },
@@ -323,13 +322,13 @@ export const PERICIAS = [
   { id: "medicina", nome: "Medicina", atributo: "sabedoria" },
   { id: "ocultismo", nome: "Ocultismo", atributo: "sabedoria" },
   { id: "percepcao", nome: "Percepção", atributo: "sabedoria" },
-  { id: "religiao", nome: "Religião", atributo: "sabedoria" },
+  { id: "teologia", nome: "Teologia", atributo: "inteligencia", complementar:true },
+  { id: "direcao", nome: "Direção", atributo: "sabedoria", complementar:true },
   { id: "sobrevivencia", nome: "Sobrevivência", atributo: "sabedoria" },
   { id: "persuasao", nome: "Persuasão", atributo: "presenca" },
   { id: "enganacao", nome: "Enganação", atributo: "presenca" },
   { id: "intimidacao", nome: "Intimidação", atributo: "presenca" },
   { id: "performance", nome: "Performance", atributo: "presenca" },
-  { id: "vontade", nome: "Vontade", atributo: "sabedoria", tr: true },
 ];
 
 export const TESTES_RESISTENCIA = [
@@ -528,6 +527,7 @@ export function aplicarLevelUp(char, novoNivel, espId = null) {
   p.pvMax = pvMaxNovo;
   p.peMax = peMaxNovo;
   // Ajusta atuais se excederem
+  recalcularPontos(char);
   if ((p.pvAtual || 0) > pvMaxNovo) p.pvAtual = pvMaxNovo;
   if ((p.peAtual || 0) > peMaxNovo) p.peAtual = peMaxNovo;
 
