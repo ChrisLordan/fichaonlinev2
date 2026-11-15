@@ -2,7 +2,7 @@ import {modificador,bonusTreinamento} from '../data/calculos.js';
 import {isRestricted} from '../data/resources.js';
 export function renderAttackChecks(root,char,save){
  char.testesAcerto ||= {};
- const section=document.createElement('section');section.className='card visao-card';const heading=document.createElement('h3');heading.textContent='Testes de acerto';section.append(heading);
+ const section=document.createElement('section');section.className='card visao-card visao-checks-card';const heading=document.createElement('h3');heading.textContent='Jogadas de Ataque';section.append(heading);
  for(const [id,name,attribute]of [['corpo','Corpo a corpo','forca'],['distancia','À distância','destreza'],['amaldicoado','Amaldiçoado',char.tecnica?.atributoChave||'presenca']]){
   if(id==='amaldicoado'&&isRestricted(char))continue;
   const item=char.testesAcerto[id] ||= {atributo:attribute,treinado:id==='amaldicoado'};

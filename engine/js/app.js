@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { listChars, getActiveId, setActiveId, getChar, createEmpty, saveChar } from './storage/cookies.js';
-import { renderEditor } from './sheets/editor.js?v=20261115-profile-4';
+import { renderEditor } from './sheets/editor.js?v=20261115-sheet-layout-1';
 import { renderCombat } from './sheets/combat.js';
 import { renderSummons } from './sheets/summons.js';
 import { toast } from './ui/toast.js';

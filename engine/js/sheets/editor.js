@@ -162,10 +162,30 @@ function renderVisaoCentral(container) {
   const idf = state.identificacao = state.identificacao || {};
   const atr = state.atributos = state.atributos || {};
   const p = resourcePoints(state);
+  const restricted = isRestricted(state);
+  const resourceName = restricted ? "Estamina" : "Energia Amaldiçoada";
+  const resourceShort = restricted ? "Est." : "PE";
   const d = derivar(state);
   const nivel = idf.nivel || 1;
   const btInfo = infoBonusTreinamento(nivel);
   const esp = ESPECIALIZACOES.find(e => e.id === idf.especializacao);
+  const originName = idf.origem === CUSTOM_ORIGIN ? (state.origemPersonalizada?.nome || "Origem Personalizada") : idf.origem;
+  const clanName = idf.clan || "—";
+  const campaignName = idf.campanha || "—";
+  const abilityList = [...(state.especializacaoDetalhes?.habilidades || []), ...(state.talentos || [])];
+  const deathState = state.testesMorte ||= { sucessos: [false,false,false], falhas: [false,false,false] };
+  const trainingList = [
+    ["agilidade","Treino de Agilidade"],["barreiras","Treino de Barreiras"],["compreensao","Treino de Compreensão"],
+    ["controleEnergia","Controle de Energia"],["treinoDominios","Treino de Domínios"],["energiaReversa","Energia Reversa"],
+    ["luta","Treino de Luta"],["manejoArma","Manejo de Arma"],["pericia","Treino de Perícia"],
+    ["potencialFisico","Potencial Físico"],["treinoResistencia","Treino de Resistência"],
+  ].map(([key,label]) => {
+    const stages=state.treinamentos?.[key]||[];
+    const count=Array.isArray(stages)?stages.slice(0,4).filter(Boolean).length:0;
+    return count ? `<div><span>${label}</span><strong>${count}/4</strong></div>` : "";
+  }).join("");
+  const aspectLabels={personalidade:"Personalidade",ideais:"Ideais",ligacoes:"Ligações",complicacoes:"Complicações"};
+  const aspectsHtml=Object.entries(aspectLabels).filter(([key])=>state.aspectos?.[key]).map(([key,label])=>`<p><strong>${label}:</strong> ${escapeHtml(state.aspectos[key])}</p>`).join("");
 
   const ATRIBUTOS = [
     { id: "forca", nome: "Força", abbr: "FOR" },
@@ -221,9 +241,24 @@ function renderVisaoCentral(container) {
 
   container.innerHTML = `
     <div class="visao-central anim-fade-in">
+      <header class="card visao-identificacao">
+        <div class="visao-identificacao__brand"><strong>FEITICEIROS &amp; MALDIÇÕES</strong><small>FICHA DE PERSONAGEM</small></div>
+        <div class="visao-identificacao__grid">
+          <div><small>Nome</small><strong>${escapeHtml(idf.nome || "Sem nome")}</strong></div>
+          <div><small>Jogador</small><strong>${escapeHtml(idf.jogador || "—")}</strong></div>
+          <div><small>Origem</small><strong>${escapeHtml(originName || "—")}</strong></div>
+          <div><small>Especialização</small><strong>${escapeHtml(idf.especializacao || "—")}</strong></div>
+          <div><small>Clã</small><strong>${escapeHtml(clanName)}</strong></div>
+          <div><small>Campanha</small><strong>${escapeHtml(campaignName)}</strong></div>
+          <div><small>Grau</small><strong>${escapeHtml(idf.grau || "—")}</strong></div>
+          <div><small>Experiência</small><strong>${Number(idf.exp)||0} XP</strong></div>
+          <div><small>Nível</small><strong>${nivel}</strong></div>
+          <div><small>Treinamento</small><strong>+${d.prof}</strong></div>
+        </div>
+      </header>
 
       <!-- Recursos -->
-      <div class="card visao-card visao-card--destaque" id="visao-recursos">
+      <div class="card visao-card visao-card--destaque visao-resources" id="visao-recursos">
         <div class="visao-trackers">
           <div class="visao-tracker">
             <div class="row row--between">
@@ -247,8 +282,8 @@ function renderVisaoCentral(container) {
           </div>
           <div class="visao-tracker">
             <div class="row row--between">
-              <span class="visao-tracker__label">PE</span>
-              <span class="text-xs text-mute">Energia Amaldiçoada</span>
+              <span class="visao-tracker__label">${resourceShort}</span>
+              <span class="text-xs text-mute">${resourceName}</span>
             </div>
             <div class="visao-tracker__bar">
               <div class="visao-tracker__fill" style="width: ${Math.min(100, (p.peAtual / Math.max(1, p.peMax)) * 100)}%; background: linear-gradient(90deg, var(--site-color-790c1a, #790c1a), var(--site-color-ff263e, #ff263e));"></div>
@@ -263,6 +298,14 @@ function renderVisaoCentral(container) {
               <button class="visao-btn" data-pe-step="-1" aria-label="−1 PE">−</button>
               <button class="visao-btn" data-pe-step="1" aria-label="+1 PE">+</button>
               <button class="visao-btn" data-pe-step="5" aria-label="+5 PE">+5</button>
+            </div>
+          </div>
+          <div class="visao-tracker">
+            <div class="row row--between"><span class="visao-tracker__label">IA</span><span class="text-xs text-mute">Integridade da Alma</span></div>
+            <div class="row row--between visao-tracker__integrity">
+              <input class="input input--mono" type="number" min="0" data-ia-atual value="${p.integridadeAtual ?? p.pvMax ?? 10}" aria-label="Integridade atual">
+              <span class="tracker__sep">/</span>
+              <input class="input input--mono" type="number" min="0" data-ia-max value="${p.integridadeMax ?? p.pvMax ?? 10}" aria-label="Integridade máxima">
             </div>
           </div>
         </div>
@@ -283,6 +326,10 @@ function renderVisaoCentral(container) {
             <div class="visao-stat__label">CARGA</div>
             <div class="visao-stat__value">${d.limite}</div>
           </div>
+          <div class="visao-stat">
+            <div class="visao-stat__label">DESLOC.</div>
+            <div class="visao-stat__value">${state.defesa?.deslocamento || 9}m</div>
+          </div>
           <div class="visao-stat" title="Bônus de Treinamento — ${btInfo.faixa}${btInfo.proxMudanca ? ` (próx. mudança nv ${btInfo.proxMudanca})` : ''}">
             <div class="visao-stat__label">BT</div>
             <div class="visao-stat__value">+${d.prof}</div>
@@ -291,7 +338,7 @@ function renderVisaoCentral(container) {
       </div>
 
       <!-- Atributos -->
-      <div class="card visao-card">
+      <div class="card visao-card visao-attributes">
         <div class="row row--between" style="margin-bottom: var(--gap-3);">
           <strong>Atributos</strong>
           <span class="text-xs text-mute">${esp ? esp.nome : "—"}</span>
@@ -316,7 +363,7 @@ function renderVisaoCentral(container) {
         const lista = state.identificacao.especializacoes || [];
         if (lista.length === 0) return "";
         return `
-        <div class="card visao-card">
+        <div class="card visao-card visao-specializations">
           <div class="row row--between" style="margin-bottom: var(--gap-2);">
             <strong>Especializações</strong>
             <span class="text-xs text-mute">${lista.length === 1 ? "single-class" : "multiclasse"}</span>
@@ -345,7 +392,7 @@ function renderVisaoCentral(container) {
         const pend = pendenciasPorNivel(state);
         if (pend.length === 0) return "";
         return `
-        <div class="card visao-card" id="visao-pendencias" style="border-left: 3px solid var(--warning);">
+        <div class="card visao-card visao-pendencias" id="visao-pendencias" style="border-left: 3px solid var(--warning);">
           <div class="row row--between" style="margin-bottom: var(--gap-2);">
             <strong>📋 Pendências de Nv ${idf.nivel || 1}</strong>
             <span class="text-xs text-mute">${pend.length} pendência(s)</span>
@@ -362,21 +409,21 @@ function renderVisaoCentral(container) {
       })()}
 
       <!-- CDs -->
-      <div class="visao-cds">
+      <div class="visao-cds visao-cds-panel">
         <div class="card visao-card" style="text-align: center;">
           <div class="text-xs text-soft text-uppercase" style="letter-spacing: 0.08em;">CD Esp.</div>
           <div class="text-mono text-accent" style="font-size: var(--fs-3xl); font-weight: 700; line-height: 1; margin: 4px 0;">${d.cdEspecializacao}</div>
           <div class="text-xs text-mute">8 + mod + prof + nv/2</div>
         </div>
-        <div class="card visao-card" style="text-align: center;">
+        ${!restricted ? `<div class="card visao-card" style="text-align: center;">
           <div class="text-xs text-soft text-uppercase" style="letter-spacing: 0.08em;">CD Ama.</div>
           <div class="text-mono text-accent" style="font-size: var(--fs-3xl); font-weight: 700; line-height: 1; margin: 4px 0;">${d.cdAmaldicoado}</div>
           <div class="text-xs text-mute">8 + mod + prof + nv/2</div>
-        </div>
+        </div>` : ""}
       </div>
 
       <!-- Perícias -->
-      <div class="card visao-card">
+      <div class="card visao-card visao-skills-card">
         <div class="row row--between" style="margin-bottom: var(--gap-3);">
           <strong>Perícias & Testes de Resistência</strong>
           <span class="text-xs text-mute">Prof. atual: +${bonusTreinamento(nivel)}</span>
@@ -387,8 +434,7 @@ function renderVisaoCentral(container) {
       </div>
 
       <!-- Ataques -->
-      ${ataques.length > 0 ? `
-        <div class="card visao-card">
+      <div class="card visao-card visao-attacks-card">
           <div class="row row--between" style="margin-bottom: var(--gap-3);">
             <strong>Ataques Principais</strong>
             <span class="text-xs text-mute">${ataques.length} ${ataques.length === 1 ? "ataque" : "ataques"}</span>
@@ -396,14 +442,58 @@ function renderVisaoCentral(container) {
           <div class="visao-ataques">
             ${atkRows}
           </div>
+          ${ataques.length === 0 ? '<p class="text-xs text-mute">Nenhum ataque cadastrado. Use Ataques & CDs no menu +.</p>' : ''}
+      </div>
+
+      <section class="card visao-card visao-habilidades-card">
+        <div class="section-title">Habilidades e Talentos</div>
+        <div class="visao-habilidades-lista">
+          ${abilityList.map(h => `<details><summary>${escapeHtml(h.nome || "Sem nome")}</summary><p>${escapeHtml(h.descricao || "Sem descrição.")}</p></details>`).join("") || '<p class="text-xs text-mute">Nenhuma habilidade ou talento adicionado.</p>'}
         </div>
-      ` : ""}
+      </section>
+
+      <section class="card visao-card visao-morte-card">
+        <div class="section-title">Testes de Morte</div>
+        ${["sucessos","falhas"].map(key => `<div class="visao-death-row"><strong>${key==="sucessos"?"Sucessos":"Falhas"}</strong>${[0,1,2].map(i=>`<label><input type="checkbox" data-morte="${key}" data-morte-index="${i}" ${deathState[key]?.[i]?"checked":""} aria-label="${key} ${i+1}"></label>`).join("")}</div>`).join("")}
+      </section>
+
+      <section class="card visao-card visao-dados-vida">
+        <div class="section-title">Dados de Vida</div>
+        <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><span>${nivel} dados disponíveis</span></div>
+      </section>
+
+      <section class="card visao-card visao-training-card">
+        <div class="section-title">Treinamentos</div>
+        ${trainingList || '<p class="text-xs text-mute">Nenhum treinamento iniciado.</p>'}
+      </section>
+
+      <section class="card visao-card visao-characteristics-card">
+        <div class="section-title">Características</div>
+        ${aspectsHtml || '<p class="text-xs text-mute">Adicione detalhes na seção Aspectos.</p>'}
+      </section>
+
+      <section class="card visao-card visao-notes-card">
+        <div class="section-title">Anotações</div>
+        <textarea class="textarea" rows="5" data-visao-notas placeholder="Anotações da sessão...">${escapeHtml(state.anotacoes?.anotacoes || "")}</textarea>
+      </section>
 
     </div>
   `;
 
   // Atributos editáveis na visão central
   renderAttackChecks(container.querySelector('.visao-central'),state,scheduleSave);
+  container.querySelectorAll('[data-ia-atual],[data-ia-max]').forEach(input => input.addEventListener('change', () => {
+    state.pontos ||= {};
+    state.pontos[input.hasAttribute('data-ia-atual') ? 'integridadeAtual' : 'integridadeMax'] = Math.max(0, Number(input.value) || 0);
+    scheduleSave();
+  }));
+  container.querySelectorAll('[data-morte]').forEach(input => input.addEventListener('change', () => {
+    const key=input.dataset.morte,index=Number(input.dataset.morteIndex);
+    state.testesMorte ||= {sucessos:[false,false,false],falhas:[false,false,false]};
+    state.testesMorte[key] ||= [false,false,false];state.testesMorte[key][index]=input.checked;scheduleSave();
+  }));
+  const notes=container.querySelector('[data-visao-notas]');
+  notes?.addEventListener('input',()=>{state.anotacoes ||= {};state.anotacoes.anotacoes=notes.value;scheduleSave();});
   bindAtributoInputs(container, () => {
     renderVisaoCentral(container);
   });
@@ -411,10 +501,13 @@ function renderVisaoCentral(container) {
   // Botões +/- de PV/PE
   bindStepButtons(container, "pv", "pvMax", "pvAtual");
   bindStepButtons(container, "pe", "peMax", "peAtual");
-  // (Estamina removida — Restringido segue tabela oficial, sem Est)
+  // O proxy resourcePoints direciona os mesmos controles para Estamina em Restringido.
   // Botões de temp (PV/PE)
   bindTempButtons(container, "pv");
   bindTempButtons(container, "pe");
+  if (restricted) {
+    container.querySelectorAll('[data-pe-step]').forEach(button => button.setAttribute('aria-label',button.getAttribute('aria-label').replace(/PE/g,'Estamina')));
+  }
   labelResources(container,state);
 }
 
