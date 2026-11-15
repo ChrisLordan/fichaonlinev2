@@ -1453,7 +1453,7 @@ function renderHabilidades(container, initial='origem') {
   function render() {
     container.innerHTML = `
       <div class="subtabs" id="hab-subtabs">
-        ${["origem", "especializacao", "talentos", "aptidoes", "treinamentos"].map(s => `
+        ${["origem", "especializacao", "talentos", ...(isRestricted(state) ? ["aptidoes"] : []), "treinamentos"].map(s => `
           <button class="subtab" data-sub="${s}" aria-current="${state_local.current === s ? "true" : "false"}">${s==='aptidoes'&&isRestricted(state)?'Dádivas do Céu':s.charAt(0).toUpperCase() + s.slice(1)}</button>
         `).join("")}
       </div>
@@ -1469,7 +1469,7 @@ function renderHabilidades(container, initial='origem') {
     if (state_local.current === "origem") renderOrigemDetalhe(body);
     if (state_local.current === "especializacao") renderEspDetalhe(body);
     if (state_local.current === "talentos") renderTalentos(body);
-    if (state_local.current === "aptidoes") renderAptidoes(body);
+    if (state_local.current === "aptidoes" && isRestricted(state)) renderAptidoes(body);
     if (state_local.current === "treinamentos") renderTreinamentos(body);
   }
 
