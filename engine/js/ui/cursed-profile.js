@@ -20,7 +20,7 @@ export function renderCursedProfile(root,char,handlers){
   char.tecnica ||= {nome:'',descricao:'',feiticos:[],atributoChave:'presenca'};
   char.estiloMarcial ||= {nome:'',fundamento:'',tecnicas:[]};
   char.aptidoes ||= {aura:0,controle:0,barreira:0,dominio:0,energiaReversa:0,completas:{}};
-  char.aptidoes.escolhas ||= {};
+  delete char.aptidoes.escolhas;
   const t=restricted?char.estiloMarcial:char.tecnica;
   const identity=panel(restricted?'Técnica Marcial':'Técnica Amaldiçoada','cursed-identity');
   input(identity,'Nome da Técnica',t,'nome');input(identity,restricted?'Descrição do Estilo':'Descrição da Técnica',t,restricted?'fundamento':'descricao',true);
@@ -30,19 +30,26 @@ export function renderCursedProfile(root,char,handlers){
   for(const [label,value] of [['Feitiços Conhecidos',techniques.length],['CD Técnica',d.cdEspecializacao],...(!restricted?[['CD Amaldiçoada',d.cdAmaldicoado]]:[])]){const item=make('div');item.append(make('small',label),make('strong',String(value)));stats.append(item);}identity.append(stats);grid.append(identity);
 
   const apt=panel('Aptidões Amaldiçoadas','cursed-aptitudes');
-  const choices=make('div',null,'cursed-aptitude-choices');
-  const charLevel=Math.max(1,Number(char.identificacao?.nivel)||1);
-  for(let level=1;level<=charLevel;level++){const row=make('label',`Nível ${level}`,'field'),select=make('select',null,'select');select.add(new Option('Selecione uma aptidão',''));for(const a of APTIDOES)select.add(new Option(a.nome,a.id));select.value=char.aptidoes.escolhas[level]||'';select.onchange=()=>{if(select.value)char.aptidoes.escolhas[level]=select.value;else delete char.aptidoes.escolhas[level];handlers.save();};row.append(select);choices.append(row);}apt.append(choices);
-  const levels=make('div',null,'cursed-aptitude-levels');
-  for(const a of APTIDOES){const item=make('label',null,'cursed-aptitude-item'),inputLevel=make('input');inputLevel.type='number';inputLevel.min='0';inputLevel.step='1';inputLevel.value=char.aptidoes[a.id]||0;inputLevel.setAttribute('aria-label',`Nível de ${a.nome}`);inputLevel.onchange=()=>{char.aptidoes[a.id]=Math.max(0,Math.floor(Number(inputLevel.value)||0));handlers.save();};item.append(inputLevel,make('small',a.nome));levels.append(item);}apt.append(levels);grid.append(apt);
+  char.aptidoes.personalizadas ||= [];
+  const table=make('div',null,'cursed-custom-aptitudes');
+  const header=make('div',null,'cursed-custom-aptitude-row cursed-custom-aptitude-head');
+  for(const label of ['Nome','Atual','Máx.','Custo',''])header.append(make('span',label));table.append(header);
+  const fieldInput=(value,type,label)=>{const el=make('input');el.type=type;el.value=value??'';el.setAttribute('aria-label',label);return el;};
+  char.aptidoes.personalizadas.forEach((entry,index)=>{const row=make('div',null,'cursed-custom-aptitude-row');
+   for(const [key,label,type]of [['nome','Nome','text'],['atual','Atual','number'],['maximo','Máximo','number'],['custo','Custo','text']]){const el=fieldInput(entry[key],type,`${label} da aptidão ${index+1}`);if(type==='number')el.min='0';el.oninput=()=>{entry[key]=type==='number'?(el.value===''?'':Number(el.value)):el.value;handlers.save();};row.append(el);}
+   const remove=make('button','×','btn btn--subtle btn--sm');remove.type='button';remove.setAttribute('aria-label',`Remover aptidão ${index+1}`);remove.onclick=()=>{char.aptidoes.personalizadas.splice(index,1);handlers.save();render();};row.append(remove);table.append(row);
+  });
+  const add=make('button','+ Adicionar aptidão','btn btn--subtle btn--sm');add.type='button';add.onclick=()=>{char.aptidoes.personalizadas.push({nome:'',atual:0,maximo:0,custo:''});handlers.save();render();};apt.append(table,add);grid.append(apt);
 
-  const list=panel(restricted?'Lista de Artes Marciais':'Feitiços Conhecidos','cursed-spells');const rows=make('div',null,'cursed-spell-levels');
-  for(let level=restricted?0:0;level<=(restricted?5:5);level++){const group=make('section');group.append(make('h4',restricted?`Arte Marcial Nível ${level}`:`Nível ${level}`));const found=techniques.filter(x=>Number(x.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'),make('p',technique.descricao||'Sem descrição.'));group.append(note);}rows.append(group);}list.append(rows);grid.append(list);
+  const list=panel(restricted?'Lista de Artes Marciais':'Lista de Artes Marciais','cursed-spells');const rows=make('div',null,'cursed-spell-levels');
+  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',`Arte Marcial Nível ${level}`));const found=techniques.filter(x=>Number(x.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'),make('p',technique.descricao||'Sem descrição.'));group.append(note);}rows.append(group);}list.append(rows);grid.append(list);
+  const aptLevels=panel('Níveis de Aptidão','cursed-aptitude-levels-panel'),levels=make('div',null,'cursed-aptitude-levels');
+  for(const a of APTIDOES){const item=make('label',null,'cursed-aptitude-item'),inputLevel=make('input');inputLevel.type='number';inputLevel.min='0';inputLevel.step='1';inputLevel.value=char.aptidoes[a.id]||0;inputLevel.setAttribute('aria-label',`Nível de ${a.nome}`);inputLevel.onchange=()=>{char.aptidoes[a.id]=Math.max(0,Math.floor(Number(inputLevel.value)||0));handlers.save();};item.append(inputLevel,make('small',a.nome));levels.append(item);}aptLevels.append(levels);grid.append(aptLevels);
 
   if(!restricted){char.tecnica.expansaoDominio ||= {nome:'',tipo:'',descricao:''};const domain=panel('Expansão de Domínio','cursed-domain');input(domain,'Nome da Expansão',char.tecnica.expansaoDominio,'nome');input(domain,'Tipo de Expansão',char.tecnica.expansaoDominio,'tipo');input(domain,'Descrição da Expansão',char.tecnica.expansaoDominio,'descricao',true);grid.append(domain);
    char.tecnica.tecnicaMaxima ||= {nome:'',descricao:''};const maximum=panel('Técnica Máxima','cursed-maximum');input(maximum,'Nome da Técnica',char.tecnica.tecnicaMaxima,'nome');input(maximum,'Descrição da Técnica Máxima',char.tecnica.tecnicaMaxima,'descricao',true);grid.append(maximum);
   }
-  content.append(grid);
+  content.append(make('h2','Perfil Amaldiçoado','cursed-profile-title'),grid);
  }
  render();
 }

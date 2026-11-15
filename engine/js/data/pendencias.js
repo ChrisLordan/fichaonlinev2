@@ -106,8 +106,8 @@ export function pendenciasPorNivel(char) {
 
   // 4. Aptidões amaldiçoadas (1 por nível, todas as especializações)
   const esperado = nivel;
-  const escolhasAptidao = aptidoes.escolhas && typeof aptidoes.escolhas === 'object'
-    ? Object.values(aptidoes.escolhas).filter(Boolean).length
+  const escolhasAptidao = Array.isArray(aptidoes.personalizadas)
+    ? aptidoes.personalizadas.length
     : Object.entries(aptidoes).filter(([key]) => !['completas', 'escolhas'].includes(key)).reduce((sum, [, value]) => sum + (Number(value) || 0), 0);
   if (idf.especializacao!=='Restringido' && escolhasAptidao < esperado) {
     pendencias.push({
