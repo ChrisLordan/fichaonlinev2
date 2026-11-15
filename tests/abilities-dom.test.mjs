@@ -20,7 +20,7 @@ for(const origin of ['Inato','Herdado','Derivado','Feto Amaldiçoado Híbrido','
  assert.ok(body.querySelector('.ability-name'),`Catálogo ausente para ${spec}: ${body.textContent}`);
  if(spec==='Restringido'){
   body.querySelector('[data-sub="aptidoes"]').click();await wait(100);assert.ok(body.textContent.includes('Dádivas do Céu'));assert.equal(body.querySelectorAll('details').length,9);
-  body.querySelector('[data-sub="treinamentos"]').click();await wait(100);assert.equal(body.querySelectorAll('details').length,11);
+  body.querySelector('[data-sub="treinamentos"]').click();await wait(100);assert.equal(body.querySelectorAll('.training-card').length,11);
  }
  document.querySelector('.modal__header button').click();cleanup();
  console.log(`${origin} / ${spec}: Habilidades e catálogo OK`);

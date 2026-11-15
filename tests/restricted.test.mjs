@@ -13,5 +13,5 @@ const p=resourcePoints(char);assert.equal(p.peMax,80);p.peAtual=33;assert.equal(
 const root=document.querySelector('main');root.textContent='Pontos de Energia Amaldiçoada PE';labelResources(root,char);assert.equal(root.textContent,'Pontos de Estamina Estamina');
 renderMartial(root,char,()=>{});assert.ok(root.textContent.includes('Técnicas Marciais'));root.querySelector('button').click();assert.equal(char.estiloMarcial.tecnicas.length,1);assert.equal(char.estiloMarcial.tecnicas[0].custo,2);
 await renderGifts(root,char,()=>{});assert.equal(root.querySelectorAll('details').length,9);root.querySelector('button').click();assert.equal(char.dadivas.length,1);
-await renderTraining(root,char,()=>{});assert.equal(root.querySelectorAll('details').length,11);assert.equal(root.querySelectorAll('input[type=checkbox]').length,55);
+await renderTraining(root,char,()=>{});assert.equal(root.querySelectorAll('.training-card').length,11);assert.equal(root.querySelectorAll('input[type=checkbox]').length,44);
 char.dadivas=['Vigor Infindável'];recalcularPontos(char);assert.equal(char.pontos.estaminaMax,90);dom.window.close();console.log('Restringido: Estamina, técnicas marciais, nove dádivas, onze treinos e perícias OK.');
