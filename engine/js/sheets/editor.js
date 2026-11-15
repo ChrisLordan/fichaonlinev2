@@ -198,8 +198,8 @@ function renderVisaoCentral(container) {
   state.pontos.extras ||= {};
   const sheetField=(label,path,value,type="text")=>`<label class="sheet-header-cell"><small>${label}</small><input data-main-path="${path}" type="${type}" value="${escapeHtml(value ?? "")}"></label>`;
   const sheetSelect=(label,path,value,options)=>`<label class="sheet-header-cell"><small>${label}</small><select data-main-path="${path}">${options.map(option=>`<option value="${escapeHtml(option.value)}" ${option.value===value?'selected':''}>${escapeHtml(option.label)}</option>`).join('')}</select></label>`;
-  const aspectLabels={personalidade:"Personalidade",ideais:"Ideais",ligacoes:"Ligações",complicacoes:"Complicações"};
-  const aspectsHtml=Object.entries(aspectLabels).map(([key,label])=>`<label class="sheet-aspect-field"><span>${label}</span><textarea data-main-path="aspectos.${key}" rows="2">${escapeHtml(state.aspectos[key]||'')}</textarea></label>`).join("");
+  state.caracteristicasLivres ||= [];
+  const characteristicLines=Array.from({length:12},(_,index)=>`<input class="characteristic-line" data-main-path="caracteristicasLivres.${index}" aria-label="Característica livre ${index+1}" value="${escapeHtml(state.caracteristicasLivres[index]||'')}" autocomplete="off">`).join('');
   const autoRd=(state.dadivas||[]).includes("Físico Robusto")?Math.floor(nivel/2):0;
   const rdRows=TIPOS_DANO.map(type=>`<label><span>${type.slice(0,3).toUpperCase()}</span><input aria-label="RD adicional ${type}" type="number" min="0" data-main-path="rd.${type}" value="${Number(state.rd[type])||0}"><small>Total ${((Number(state.rd[type])||0)+autoRd)}</small></label>`).join("");
   const resistanceOptions=(value)=>['—','Resistência','Imunidade','Vulnerabilidade'].map(label=>`<option value="${label}" ${value===label?'selected':''}>${label}</option>`).join('');
@@ -520,8 +520,7 @@ function renderVisaoCentral(container) {
 
       <section class="card visao-card visao-characteristics-card">
         <div class="section-title">Características</div>
-        ${aspectsHtml}
-        <div class="sheet-appearance-grid">${[['idade','Idade'],['altura','Altura'],['peso','Peso'],['genero','Gênero'],['cabelos','Cabelos'],['olhos','Olhos'],['pele','Pele'],['roupas','Roupas'],['marcas','Marcas']].map(([key,label])=>`<label>${label}<input data-main-path="aparencia.${key}" value="${escapeHtml(state.aparencia[key]||'')}"></label>`).join('')}</div>
+        <div class="characteristic-lines">${characteristicLines}</div>
       </section>
 
       <section class="card visao-card visao-notes-card">
