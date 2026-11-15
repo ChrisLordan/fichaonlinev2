@@ -9,7 +9,7 @@ import { ESPECIALIZACOES, ESTILOS_COMBATE, POSTURAS, GRAUS, GRAU_POR_NIVEL, pode
 import { pendenciasPorNivel, tabelaAteNivel, limiteAtributo, pontosAtributoRecebidos } from '../data/pendencias.js';
 import { ARMAS_SIMPLES, ARMAS_COMPLEXAS, UNIFORMES, ESCUDOS, KITS, ITENS_ESPECIAIS } from '../data/equipamentos.js';
 import { APTIDOES, TREINAMENTOS, APTIDAO_BY_ID } from '../data/aptidoes.js';
-import { PERICIAS, TESTES_RESISTENCIA, TIPOS_DANO, CONDICOES, modificador, formatMod, derivar, totalPericia, bonusTreinamento, infoBonusTreinamento, pvInicial, dadoVida, peInicial, pePorNivel, aplicarLevelUp, recalcularPontos, tempMaxPara, setTempHP, setTempPE } from '../data/calculos.js';
+import { PERICIAS, TESTES_RESISTENCIA, TIPOS_DANO, CONDICOES, modificador, formatMod, derivar, totalPericia, totalTesteResistencia, bonusAtributoEspecial, bonusTreinamentoPericia, bonusTreinamentoResistencia, bonusTreinamento, infoBonusTreinamento, pvInicial, dadoVida, peInicial, pePorNivel, aplicarLevelUp, recalcularPontos, tempMaxPara, setTempHP, setTempPE } from '../data/calculos.js';
 import { toast } from '../ui/toast.js';
 import { CUSTOM_ORIGIN, customOriginForm } from '../ui/custom-origin.js';
 import { renderAbilityCatalog } from '../ui/ability-catalog.js';
@@ -166,6 +166,8 @@ function renderVisaoCentral(container) {
   const resourceName = restricted ? "Estamina" : "Energia Amaldiçoada";
   const resourceShort = restricted ? "Estamina" : "PE";
   const resourceFieldPrefix = restricted ? "estamina" : "pe";
+  state.defesa ||= { equipamento: 0, outros: 0, deslocamento: 9, iniciativaOutros: 0 };
+  if (state.defesa.deslocamentoOutros == null && state.defesa.deslocamento != null) state.defesa.deslocamentoOutros = Number(state.defesa.deslocamento) - 9;
   const d = derivar(state);
   const nivel = idf.nivel || 1;
   const btInfo = infoBonusTreinamento(nivel);
@@ -181,7 +183,6 @@ function renderVisaoCentral(container) {
     ...state.talentos.map((entry,index)=>({entry,path:`talentos.${index}`}))
   ];
   const deathState = state.testesMorte ||= { sucessos: [false,false,false], falhas: [false,false,false] };
-  state.defesa ||= { equipamento: 0, outros: 0, deslocamento: 9, iniciativaOutros: 0 };
   state.cd ||= { especializacao: { atributo: "forca", outros: 0 }, amaldicoado: { atributo: "presenca", outros: 0 } };
   state.cd.especializacao ||= { atributo: "forca", outros: 0 };
   state.cd.amaldicoado ||= { atributo: "presenca", outros: 0 };
@@ -209,10 +210,10 @@ function renderVisaoCentral(container) {
   }).join("");
   const aspectLabels={personalidade:"Personalidade",ideais:"Ideais",ligacoes:"Ligações",complicacoes:"Complicações"};
   const aspectsHtml=Object.entries(aspectLabels).map(([key,label])=>`<label class="sheet-aspect-field"><span>${label}</span><textarea data-main-path="aspectos.${key}" rows="2">${escapeHtml(state.aspectos[key]||'')}</textarea></label>`).join("");
-  const rdRows=TIPOS_DANO.map(type=>`<label><span>${type.slice(0,3).toUpperCase()}</span><input aria-label="RD ${type}" type="number" min="0" data-main-path="rd.${type}" value="${Number(state.rd[type])||0}"></label>`).join("");
+  const autoRd=(state.dadivas||[]).includes("Físico Robusto")?Math.floor(nivel/2):0;
+  const rdRows=TIPOS_DANO.map(type=>`<label><span>${type.slice(0,3).toUpperCase()}</span><input aria-label="RD adicional ${type}" type="number" min="0" data-main-path="rd.${type}" value="${Number(state.rd[type])||0}"><small>Total ${((Number(state.rd[type])||0)+autoRd)}</small></label>`).join("");
   const resistanceOptions=(value)=>['—','Resistência','Imunidade','Vulnerabilidade'].map(label=>`<option value="${label}" ${value===label?'selected':''}>${label}</option>`).join('');
   const resistanceRows=TIPOS_DANO.map(type=>`<label><span>${type}</span><select data-main-path="resistencias.${type}">${resistanceOptions(state.resistencias[type])}</select></label>`).join('');
-  state.pontos.dadosVidaDisponiveis ??= nivel;
   state.pontos.dadosVidaGastos ??= 0;
 
   const ATRIBUTOS = [
@@ -229,7 +230,8 @@ function renderVisaoCentral(container) {
     return list.map(per => {
       const pd = (isResistance?state.testesResistencia:pericias)?.[per.id] || {};
       const mod = d.mods[per.atributo] || 0;
-      const tot = totalPericia({modAtributo:mod,treinado:!!pd.treino,mestre:!!pd.mestre,nivel,outros:pd.outros||0,prof:bonusTreinamento(nivel)});
+      const bonuses={modAtributo:mod,bonusAtributo:isResistance?bonusAtributoEspecial(state,per.atributo,"resistencia"):bonusAtributoEspecial(state,per.atributo,"pericia"),treinado:!!pd.treino,mestre:!!pd.mestre,nivel,outros:(Number(pd.outros)||0)+(isResistance?bonusTreinamentoResistencia(state,per.id):bonusTreinamentoPericia(state,per.id)),prof:bonusTreinamento(nivel)};
+      const tot = isResistance ? totalTesteResistencia(bonuses) : totalPericia(bonuses);
       const path=(isResistance?'testesResistencia':'pericias')+'.'+per.id;
       return `<div class="visao-pericia-entry">
         <button type="button" class="visao-pericia roll-trigger" data-roll-name="${escapeHtml(per.nome)}${isResistance?' TR':''}" data-roll-bonus="${tot}" title="Rolar ${escapeHtml(per.nome)}"><span class="visao-pericia__nome">${per.nome}</span><span class="visao-pericia__total">${formatMod(tot)}</span></button>
@@ -241,12 +243,13 @@ function renderVisaoCentral(container) {
   // Função para gerar lista de ataques
   const ataques = state.ataques || [];
   const atkRows = ataques.map((a,i) => {
+    a.treinado ??= true;
     const mod = d.mods[a.atributo] || 0;
-    const bonus = mod + (a.bonus || 0) + bonusTreinamento(nivel) + Math.floor(nivel/2);
+    const bonus = mod + (a.bonus || 0) + (a.treinado ? bonusTreinamento(nivel) : 0) + Math.floor(nivel/2);
     return `
       <tr>
         <td><input data-main-path="ataques.${i}.nome" value="${escapeHtml(a.nome||'Novo ataque')}" aria-label="Nome do ataque"><button type="button" class="roll-trigger" data-roll-name="Ataque: ${escapeHtml(a.nome)}" data-roll-bonus="${bonus}">Rolar ⚄</button></td>
-        <td><select data-main-path="ataques.${i}.atributo" aria-label="Atributo de ${escapeHtml(a.nome)}">${ATRIBUTOS.map(attr=>`<option value="${attr.id}" ${a.atributo===attr.id?'selected':''}>${attr.abbr}</option>`).join('')}</select><input type="number" data-main-path="ataques.${i}.bonus" value="${Number(a.bonus)||0}" aria-label="Bônus de ${escapeHtml(a.nome)}"></td>
+        <td class="sheet-attack-modifiers"><select data-main-path="ataques.${i}.atributo" aria-label="Atributo de ${escapeHtml(a.nome)}">${ATRIBUTOS.map(attr=>`<option value="${attr.id}" ${a.atributo===attr.id?'selected':''}>${attr.abbr}</option>`).join('')}</select><label>Treinado<input type="checkbox" data-main-path="ataques.${i}.treinado" ${a.treinado?'checked':''}></label><input type="number" data-main-path="ataques.${i}.bonus" value="${Number(a.bonus)||0}" aria-label="Bônus de ${escapeHtml(a.nome)}"></td>
         <td><input data-main-path="ataques.${i}.dano" value="${escapeHtml(a.dano||'1d8')}" aria-label="Dano de ${escapeHtml(a.nome)}"></td>
         <td><input type="number" min="2" max="20" data-main-path="ataques.${i}.critico" value="${a.critico||20}" aria-label="Crítico de ${escapeHtml(a.nome)}"></td>
         <td><input data-main-path="ataques.${i}.tipo" value="${escapeHtml(a.tipo||'Ct')}" aria-label="Tipo de dano"></td>
@@ -367,7 +370,8 @@ function renderVisaoCentral(container) {
           </div>
           <div class="visao-stat">
             <div class="visao-stat__label">DESLOC.</div>
-            <div class="visao-stat__value"><input type="number" data-main-path="defesa.deslocamento" value="${state.defesa?.deslocamento || 9}" aria-label="Deslocamento em metros">m</div>
+            <div class="visao-stat__value">${d.deslocamento}m</div>
+            <label>Outros<input type="number" data-main-path="defesa.deslocamentoOutros" value="${Number(state.defesa.deslocamentoOutros)||0}" aria-label="Ajuste de deslocamento em metros"></label>
           </div>
           <div class="visao-stat" title="Bônus de Treinamento — ${btInfo.faixa}${btInfo.proxMudanca ? ` (próx. mudança nv ${btInfo.proxMudanca})` : ''}">
             <div class="visao-stat__label">BT</div>
@@ -488,7 +492,7 @@ function renderVisaoCentral(container) {
             <span class="text-xs text-mute">${ataques.length} ${ataques.length === 1 ? "ataque" : "ataques"}</span>
           </div>
           <div class="sheet-table-wrap">
-            <table class="sheet-table"><thead><tr><th>Arma</th><th>Atributo / Bônus</th><th>Dano</th><th>Crít.</th><th>Tipo</th><th>Alcance</th><th>Propriedades</th><th></th></tr></thead><tbody>
+            <table class="sheet-table"><thead><tr><th>Arma</th><th>Atributo / treino / bônus</th><th>Dano</th><th>Crít.</th><th>Tipo</th><th>Alcance</th><th>Propriedades</th><th></th></tr></thead><tbody>
             ${atkRows || '<tr><td colspan="8">Nenhum ataque adicionado.</td></tr>'}
             </tbody></table>
           </div>
@@ -510,7 +514,7 @@ function renderVisaoCentral(container) {
 
       <section class="card visao-card visao-dados-vida">
         <div class="section-title">Dados de Vida</div>
-        <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><label>Disponíveis<input type="number" min="0" data-main-path="pontos.dadosVidaDisponiveis" value="${p.dadosVidaDisponiveis??nivel}"></label><label>Gastos<input type="number" min="0" data-main-path="pontos.dadosVidaGastos" value="${p.dadosVidaGastos||0}"></label></div>
+        <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><label>Disponíveis<input type="number" min="0" data-main-path="pontos.dadosVidaDisponiveis" value="${p.dadosVidaDisponiveis??(nivel+(state.treinamentos.treinoResistencia?.[1]?2:0))}"></label><label>Gastos<input type="number" min="0" data-main-path="pontos.dadosVidaGastos" value="${p.dadosVidaGastos||0}"></label></div>
       </section>
 
       <section class="card visao-card visao-training-card">
@@ -1271,7 +1275,7 @@ function renderPericias(container) {
 
   function calcPericia(p, atr) {
     const mod = d.mods[atr] || 0;
-    let total = mod;
+    let total = mod + bonusAtributoEspecial(state,atr,"pericia") + bonusTreinamentoPericia(state,p.id);
     if (p.treino) total += prof;
     if (p.mestre) total += Math.floor(prof / 2);
     total += Math.floor(nivel / 2);
@@ -1279,13 +1283,8 @@ function renderPericias(container) {
     return total;
   }
 
-  function calcTR(t) {
-    let total = 0;
-    if (t.treino) total += prof;
-    if (t.mestre) total += Math.floor(prof / 2);
-    total += Math.floor(nivel / 2);
-    total += t.outros || 0;
-    return total;
+  function calcTR(t, atributo, id) {
+    return totalTesteResistencia({modAtributo:d.mods[atributo]||0,bonusAtributo:bonusAtributoEspecial(state,atributo,"resistencia"),treinado:!!t.treino,mestre:!!t.mestre,prof,nivel,outros:(Number(t.outros)||0)+bonusTreinamentoResistencia(state,id)});
   }
 
   const perHTML = PERICIAS.map(p => {
@@ -1308,7 +1307,7 @@ function renderPericias(container) {
   const trHTML = TESTES_RESISTENCIA.map(t => {
     if (!state.testesResistencia[t.id]) state.testesResistencia[t.id] = { treino: false, mestre: false, outros: 0 };
     const v = state.testesResistencia[t.id];
-    const total = calcTR(v, t.atributo);
+    const total = calcTR(v, t.atributo, t.id);
     return `
       <tr>
         <td><button type="button" class="roll-trigger" data-roll-name="TR: ${escapeHtml(t.nome)}" data-roll-bonus="${total}">${t.nome} ⚄</button></td>
@@ -1387,15 +1386,18 @@ function renderAtaques(container) {
   function calcAtaque(at) {
     const mod = d.mods[at.atributo] || 0;
     const prof = d.prof;
-    return formatMod(mod + prof + Math.floor(nivel/2) + (at.bonus || 0));
+    return formatMod(mod + (at.treinado === false ? 0 : prof) + Math.floor(nivel/2) + (at.bonus || 0));
   }
 
-  const ataqHTML = state.ataques.map((at, i) => `
+  const ataqHTML = state.ataques.map((at, i) => {
+    at.treinado ??= true;
+    return `
     <tr>
       <td><input class="input" data-atk="${i}" data-k="nome" value="${escapeHtml(at.nome)}"></td>
       <td>
         <select class="select" data-atk="${i}" data-k="atributo">${atrList.map(a => `<option value="${a}" ${at.atributo === a ? "selected" : ""}>${a}</option>`).join("")}</select>
       </td>
+      <td class="text-center"><label class="check"><input type="checkbox" data-atk="${i}" data-k="treinado" ${at.treinado ? "checked" : ""}><span class="check__box"></span><span class="check__label text-xs">Treinado</span></label></td>
       <td><input class="input" type="number" data-atk="${i}" data-k="bonus" value="${at.bonus || 0}"></td>
       <td class="text-right text-mono text-accent">${calcAtaque(at)}</td>
       <td><input class="input" data-atk="${i}" data-k="dano" value="${escapeHtml(at.dano)}"></td>
@@ -1414,7 +1416,8 @@ function renderAtaques(container) {
         <button class="btn btn--danger btn--sm btn--icon" data-rm-atk="${i}">×</button>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   container.innerHTML = `
     <div class="card">
@@ -1423,7 +1426,7 @@ function renderAtaques(container) {
         <table class="table">
           <thead>
             <tr>
-              <th>Nome</th><th>Atributo</th><th>Outros</th><th class="text-right">Total</th><th>Dano</th><th>Crít.</th><th>Tipo</th><th>Alcance</th><th></th>
+              <th>Nome</th><th>Atributo</th><th>Treinado</th><th>Outros</th><th class="text-right">Total</th><th>Dano</th><th>Crít.</th><th>Tipo</th><th>Alcance</th><th></th>
             </tr>
           </thead>
           <tbody>${ataqHTML}</tbody>
@@ -1463,10 +1466,10 @@ function renderAtaques(container) {
     inp.addEventListener("change", () => {
       const i = Number(inp.dataset.atk);
       const k = inp.dataset.k;
-      let v = inp.value;
+      let v = inp.type === "checkbox" ? inp.checked : inp.value;
       if (k === "bonus" || k === "critico") v = Number(v) || 0;
       state.ataques[i][k] = v;
-      if (k === "atributo" || k === "bonus") renderTab("ataques", container);
+      if (k === "atributo" || k === "bonus" || k === "treinado") renderTab("ataques", container);
       scheduleSave();
     });
   });
@@ -2525,7 +2528,7 @@ function bindTempButtons(container, prefix) {
       const result = prefix === "pv" ? setTempHP(state, novo) : setTempPE(state, novo);
       const maxKey = prefix === "pv" ? "pvMax" : "peMax";
       const teto = tempMaxPara(p[maxKey]);
-      if (novo > teto && !p[prefix + "Temp"] === result) {
+      if (novo > teto && result < novo) {
         toast(`Temp máximo: ${teto} (metade de ${p[maxKey]})`, "warn");
       }
       const local = container.closest("#section-modal-body");
@@ -2567,3 +2570,4 @@ function recarregarTudoAposNivel() {
   const peMaxEl = document.getElementById("pe-max");
   if (peMaxEl) peMaxEl.value = resourcePoints(state).peMax;
 }
+

@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { getChar, saveChar } from '../storage/cookies.js';
-import { CONDICOES, formatMod, modificador, derivar } from '../data/calculos.js';
+import { CONDICOES, TIPOS_DANO, formatMod, modificador, derivar } from '../data/calculos.js';
 import { ESPECIALIZACOES } from '../data/especializacoes.js';
 import { toast } from '../ui/toast.js';
 import {resourcePoints,labelResources} from '../data/resources.js';
@@ -81,7 +81,8 @@ function renderMain() {
           <input class="tracker__max" type="number" id="pv-max" value="${p.pvMax ?? 10}">
           <div class="tracker__bar"><div class="tracker__fill" style="width: ${pct(p.pvAtual, p.pvMax)}%"></div></div>
         </div>
-        <div class="row">
+        <div class="row row--wrap">
+          <select id="tipo-dano" aria-label="Tipo de dano" class="select select--sm">${TIPOS_DANO.map(tipo=>`<option value="${escapeHtml(tipo)}" ${tipo==='Impacto'?'selected':''}>${escapeHtml(tipo)}</option>`).join('')}</select>
           <button class="btn btn--danger btn--sm" data-dano="5">-5</button>
           <button class="btn btn--danger btn--sm" data-dano="10">-10</button>
           <button class="btn btn--danger btn--sm" data-dano="custom">Outro</button>
@@ -194,7 +195,7 @@ function renderMain() {
         if (!v) return;
         v = Number(v);
       } else v = Number(v);
-      aplicarDano(v);
+      aplicarDano(v, main.querySelector("#tipo-dano")?.value);
     };
   });
   main.querySelectorAll("[data-cura]").forEach(btn => {
@@ -289,7 +290,16 @@ function renderMain() {
   };
 }
 
-function aplicarDano(v) {
+function aplicarDano(v, tipo = "Impacto") {
+  const original = Math.max(0, Number(v) || 0);
+  const state = char.resistencias?.[tipo];
+  if (state === "Imunidade") v = 0;
+  else {
+    if (state === "Vulnerabilidade") v *= 2;
+    if (state === "Resistência") v = Math.floor(v / 2);
+    const automatico = char.dadivas?.includes("Físico Robusto") ? Math.floor((Number(char.identificacao?.nivel)||1)/2) : 0;
+    v = Math.max(0, v - automatico - (Number(char.rd?.[tipo]) || 0));
+  }
   let pv = char.pontos.pvAtual || 0;
   let temp = char.pontos.pvTemp || 0;
   // Absorve temp primeiro
@@ -304,7 +314,7 @@ function aplicarDano(v) {
   }
   char.pontos.pvAtual = Math.max(0, pv - v);
   saveChar(char);
-  addLog(`Dano: <strong>${v}</strong> (PV: ${pv} → ${char.pontos.pvAtual})`);
+  addLog(`Dano ${escapeHtml(tipo)}: <strong>${original} → ${v}</strong> após resistências/RD (PV: ${pv} → ${char.pontos.pvAtual})`);
   if (char.pontos.pvAtual === 0) toast("PV zerado! Teste de morte.", "warning");
   renderMain();
   renderLog();
@@ -441,3 +451,4 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+

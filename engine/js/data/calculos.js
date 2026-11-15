@@ -6,7 +6,7 @@ import { ESPECIALIZACOES } from './especializacoes.js';
 import { GRAU_POR_NIVEL } from './especializacoes.js';
 
 export function modificador(valor) {
-  return Math.floor((Number(valor || 0) - 10) / 2);
+  return Math.floor((Number(valor ?? 10) - 10) / 2);
 }
 
 export function formatMod(m) {
@@ -38,14 +38,17 @@ export function setTempHP(char, novo, opcoes = {}) {
 
 export function setTempPE(char, novo, opcoes = {}) {
   const p = char.pontos = char.pontos || {};
+  const restrito = char.identificacao?.especializacao === 'Restringido';
+  const currentKey = restrito ? 'estaminaTemp' : 'peTemp';
+  const maxKey = restrito ? 'estaminaMax' : 'peMax';
   const valor = Math.max(0, Math.floor(Number(novo) || 0));
   if (opcoes.acumula) {
-    p.peTemp = Math.max(0, (p.peTemp || 0) + valor);
+    p[currentKey] = Math.max(0, (p[currentKey] || 0) + valor);
   } else {
-    p.peTemp = Math.max(p.peTemp || 0, valor);
-    if (!opcoes.semLimite) p.peTemp = Math.min(p.peTemp, tempMaxPara(p.peMax));
+    p[currentKey] = Math.max(p[currentKey] || 0, valor);
+    if (!opcoes.semLimite) p[currentKey] = Math.min(p[currentKey], tempMaxPara(p[maxKey]));
   }
-  return p.peTemp;
+  return p[currentKey];
 }
 
 export function aplicarDano(char, dano, opcoes = {}) {
@@ -74,8 +77,9 @@ export function aplicarCura(char, cura) {
 
 export function aplicarConsumoPE(char, custo) {
   const p = char.pontos = char.pontos || {};
-  p.peAtual = Math.max(0, (p.peAtual || 0) - Math.max(0, Math.floor(Number(custo) || 0)));
-  return p.peAtual;
+  const key = char.identificacao?.especializacao === 'Restringido' ? 'estaminaAtual' : 'peAtual';
+  p[key] = Math.max(0, (p[key] || 0) - Math.max(0, Math.floor(Number(custo) || 0)));
+  return p[key];
 }
 
 export function bonusTreinamento(nivel) {
@@ -125,8 +129,8 @@ export function cdAmaldicoadoTotal({ atributoChave, prof = 0, nivel, outros = 0 
   return 8 + modificador(atributoChave) + prof + Math.floor(nivel / 2) + outros;
 }
 
-export function totalPericia({ modAtributo, treinado = false, mestre = false, nivel, outros = 0, prof = 0 }) {
-  let total = modAtributo;
+export function totalPericia({ modAtributo, bonusAtributo = 0, treinado = false, mestre = false, nivel, outros = 0, prof = 0 }) {
+  let total = modAtributo + bonusAtributo;
   if (treinado) total += prof;
   if (mestre) total += Math.floor(prof / 2);
   // Bônus de metade do nível para perícias treinadas
@@ -135,8 +139,51 @@ export function totalPericia({ modAtributo, treinado = false, mestre = false, ni
   return total;
 }
 
-export function totalTesteResistencia({ prof, nivel, outros = 0 }) {
-  return prof + Math.floor(nivel / 2) + outros;
+function treinamentoEtapa(char, id, etapa) {
+  return Boolean(char.treinamentos?.[id]?.[etapa]);
+}
+
+export function bonusAtributoEspecial(char, atributo, tipo = "pericia") {
+  const gifts = new Set(char.dadivas || []);
+  const bonuses = {
+    destreza: gifts.has("Agilidade Exímia") ? 2 : 0,
+    constituicao: gifts.has("Físico Robusto") ? 2 : 0,
+    forca: tipo === "pericia" && gifts.has("Força Devastadora") ? 2 : 0,
+    inteligencia: gifts.has("Mente Afiada") ? 2 : 0,
+    sabedoria: gifts.has("Percepção Aguçada") ? 2 : 0,
+    presenca: tipo === "pericia" && gifts.has("Semblante Cativante") ? 2 : 0,
+  };
+  return bonuses[atributo] || 0;
+}
+
+export function bonusTreinamentoPericia(char, periciaId) {
+  let bonus = 0;
+  if (periciaId === "acrobacia" && treinamentoEtapa(char, "agilidade", 1)) bonus += 2;
+  if (["feiticaria", "ocultismo"].includes(periciaId)) {
+    bonus += treinamentoEtapa(char, "compreensao", 1) ? 1 : 0;
+    bonus += treinamentoEtapa(char, "compreensao", 3) ? 2 : 0;
+  }
+  if (periciaId === "percepcao" && (char.dadivas || []).includes("Percepção Aguçada")) bonus += 3;
+  return bonus;
+}
+
+export function bonusTreinamentoResistencia(char, testeId) {
+  let bonus = testeId === "reflexos" && treinamentoEtapa(char, "agilidade", 3) ? 2 : 0;
+  if (testeId === "fortitude" && treinamentoEtapa(char, "treinoResistencia", 2)) bonus += 2;
+  const gifts = new Set(char.dadivas || []);
+  const nivel = Number(char.identificacao?.nivel) || 1;
+  if (testeId === "vontade" && gifts.has("Indulgente a Feitiçaria")) bonus += nivel >= 10 ? 2 : 1;
+  if (["fortitude", "reflexos"].includes(testeId) && gifts.has("Indulgente a Feitiçaria") && nivel >= 15) bonus += 2;
+  return bonus;
+}
+
+export function totalTesteResistencia({ modAtributo = 0, bonusAtributo = 0, treinado = false, mestre = false, prof = 0, nivel = 1, outros = 0 }) {
+  return modAtributo
+    + bonusAtributo
+    + (treinado ? prof : 0)
+    + (mestre ? Math.floor(prof / 2) : 0)
+    + Math.floor(nivel / 2)
+    + outros;
 }
 
 export function limiteCarga(modFor) {
@@ -401,11 +448,17 @@ export function derivar(char) {
   const modPre = modificador(atr.presenca);
   const mods = { forca: modFor, destreza: modDes, constituicao: modCon, inteligencia: modInt, sabedoria: modSab, presenca: modPre };
 
-  const defesa = 10 + modDes + Math.floor((idf.nivel || 1) / 2) + (def.equipamento || 0) + (def.outros || 0);
-  const iniciativa = modDes + (def.iniciativaOutros || 0);
+  const defesa = 10 + modDes + Math.floor((idf.nivel || 1) / 2) + (def.equipamento || 0) + (def.outros || 0) + (treinamentoEtapa(char, "luta", 1) ? 2 : 0);
+  const iniciativa = modDes + (def.iniciativaOutros || 0) + (treinamentoEtapa(char, "agilidade", 2) ? 2 : 0);
   const percepcao = char.pericias?.percepcao || {};
-  const atencao = 10 + totalPericia({modAtributo:modSab,treinado:!!percepcao.treino,mestre:!!percepcao.mestre,nivel:idf.nivel||1,outros:Number(percepcao.outros)||0,prof});
+  const bonusPercepcaoAtributo = bonusAtributoEspecial(char, "sabedoria", "pericia");
+  const atencaoExtra = (char.dadivas || []).includes("Percepção Aguçada") ? Math.floor((Number(idf.nivel) || 1) / 2) : 0;
+  const atencao = 10 + totalPericia({modAtributo:modSab,bonusAtributo:bonusPercepcaoAtributo,treinado:!!percepcao.treino,mestre:!!percepcao.mestre,nivel:idf.nivel||1,outros:(Number(percepcao.outros)||0)+bonusTreinamentoPericia(char,"percepcao")+atencaoExtra,prof});
   const limite = limiteCarga(modFor);
+  const agility = char.treinamentos?.agilidade || [];
+  const bonusDeslocamentoTreino = agility[4] ? 4.5 : agility[0] ? 1.5 : 0;
+  const bonusDeslocamentoDadiva = (char.dadivas || []).includes("Agilidade Exímia") ? 3 : 0;
+  const deslocamento = 9 + (Number(def.deslocamentoOutros) || 0) + bonusDeslocamentoTreino + bonusDeslocamentoDadiva;
 
   const cdEspMod = modificador(mods[cd.especializacao?.atributo] != null ? atr[cd.especializacao.atributo] : 10);
   const cdAmaMod = modificador(mods[cd.amaldicoado?.atributo] != null ? atr[cd.amaldicoado.atributo] : 10);
@@ -418,6 +471,7 @@ export function derivar(char) {
     defesa, iniciativa, atencao, limite,
     cdEspecializacao: cdEsp,
     cdAmaldicoado: cdAma,
+    deslocamento,
   };
 }
 
@@ -538,3 +592,4 @@ export function aplicarLevelUp(char, novoNivel, espId = null) {
     peMax: peMaxNovo,
   };
 }
+

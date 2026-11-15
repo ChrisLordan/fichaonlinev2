@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { listChars, getActiveId, setActiveId, getChar, createEmpty, saveChar } from './storage/cookies.js';
-import { renderEditor } from './sheets/editor.js?v=20261115-sheet-layout-2';
+import { renderEditor } from './sheets/editor.js?v=20261115-sheet-math-3';
 import { renderCombat } from './sheets/combat.js';
 import { renderSummons } from './sheets/summons.js';
 import { toast } from './ui/toast.js';
@@ -100,3 +100,4 @@ export function setSaveState(state) {
 
 // Expor utilitários para debug
 window.fm = { listChars, getChar, createEmpty, saveChar, toast };
+
