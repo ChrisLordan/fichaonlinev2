@@ -26,11 +26,11 @@ export function renderCursedProfile(root,char,handlers){
   const stats=make('div',null,'cursed-profile-stats');for(const [label,value]of [['Conhecidos',spells.length],['CD de Especialização',d.cdEspecializacao],...(!restricted?[['CD Amaldiçoada',d.cdAmaldicoado]]:[])]){const item=make('div');item.append(make('small',label),make('strong',String(value)));stats.append(item);}identity.append(stats);grid.append(identity);
   const list=panel(restricted?'Técnicas Marciais':'Feitiços conhecidos','cursed-spells');const levels=make('div',null,'cursed-spell-levels');
   for(let level=restricted?1:0;level<=(restricted?4:5);level++){const group=make('section');group.append(make('h4',`Nível ${level}`));const rows=spells.filter(s=>Number(s.nivel||0)===level);if(!rows.length)group.append(make('p','Nenhum registro.','text-xs text-mute'));for(const spell of rows){const note=make('details',null,'cursed-spell-note');note.append(make('summary',spell.nome||'Sem nome'),make('p',spell.descricao||'Sem descrição.'));group.append(note);}levels.append(group);}list.append(levels);
-  const manage=make('button',restricted?'Gerenciar técnicas marciais':'Gerenciar feitiços','btn btn--subtle');manage.onclick=()=>{active='technique';render();};list.append(manage);grid.append(list);
+  grid.append(list);
   const apt=panel(restricted?'Dádivas do Céu':'Níveis de Aptidão','cursed-aptitudes');
   if(restricted){const gifts=char.dadivas||[];apt.append(make('p',gifts.join(' · ')||'Nenhuma dádiva selecionada.'));}
   else{const levels=make('div',null,'cursed-aptitude-levels');for(const [key,label]of [['aura','Aura'],['controle','Controle e Leitura'],['barreira','Barreiras'],['dominio','Domínio'],['energiaReversa','Energia Reversa']]){const item=make('div');item.append(make('strong',String(char.aptidoes?.[key]||0)),make('small',label));levels.append(item);}apt.append(levels);}
-  const edit=make('button',restricted?'Gerenciar dádivas':'Gerenciar aptidões','btn btn--subtle');edit.onclick=()=>{active='aptitudes';render();};apt.append(edit);grid.append(apt);
+  grid.append(apt);
   if(!restricted){char.tecnica.expansaoDominio ||= {nome:'',tipo:'',descricao:''};const domain=panel('Expansão de Domínio','cursed-domain');field(domain,'Nome',char.tecnica.expansaoDominio,'nome');field(domain,'Tipo',char.tecnica.expansaoDominio,'tipo');field(domain,'Descrição',char.tecnica.expansaoDominio,'descricao',true);grid.append(domain);
    char.tecnica.tecnicaMaxima ||= {nome:'',descricao:''};const maximum=panel('Técnica Máxima','cursed-maximum');field(maximum,'Nome',char.tecnica.tecnicaMaxima,'nome');field(maximum,'Descrição',char.tecnica.tecnicaMaxima,'descricao',true);grid.append(maximum);
   }
