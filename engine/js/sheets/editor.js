@@ -198,16 +198,6 @@ function renderVisaoCentral(container) {
   state.pontos.extras ||= {};
   const sheetField=(label,path,value,type="text")=>`<label class="sheet-header-cell"><small>${label}</small><input data-main-path="${path}" type="${type}" value="${escapeHtml(value ?? "")}"></label>`;
   const sheetSelect=(label,path,value,options)=>`<label class="sheet-header-cell"><small>${label}</small><select data-main-path="${path}">${options.map(option=>`<option value="${escapeHtml(option.value)}" ${option.value===value?'selected':''}>${escapeHtml(option.label)}</option>`).join('')}</select></label>`;
-  const trainingList = [
-    ["agilidade","Treino de Agilidade"],["barreiras","Treino de Barreiras"],["compreensao","Treino de Compreensão"],
-    ["controleEnergia","Controle de Energia"],["treinoDominios","Treino de Domínios"],["energiaReversa","Energia Reversa"],
-    ["luta","Treino de Luta"],["manejoArma","Manejo de Arma"],["pericia","Treino de Perícia"],
-    ["potencialFisico","Potencial Físico"],["treinoResistencia","Treino de Resistência"],
-  ].map(([key,label]) => {
-    state.treinamentos[key] ||= [false,false,false,false,false];
-    const stages=state.treinamentos[key];
-    return `<div class="sheet-training-row"><strong>${label}</strong>${[0,1,2,3].map(i=>`<label title="${i+1}ª etapa">${i+1}<input type="checkbox" data-main-path="treinamentos.${key}.${i}" ${stages[i]?'checked':''}></label>`).join('')}<label title="Treinamento completo">✓<input type="checkbox" data-main-path="treinamentos.${key}.4" ${stages[4]?'checked':''}></label></div>`;
-  }).join("");
   const aspectLabels={personalidade:"Personalidade",ideais:"Ideais",ligacoes:"Ligações",complicacoes:"Complicações"};
   const aspectsHtml=Object.entries(aspectLabels).map(([key,label])=>`<label class="sheet-aspect-field"><span>${label}</span><textarea data-main-path="aspectos.${key}" rows="2">${escapeHtml(state.aspectos[key]||'')}</textarea></label>`).join("");
   const autoRd=(state.dadivas||[]).includes("Físico Robusto")?Math.floor(nivel/2):0;
@@ -517,11 +507,6 @@ function renderVisaoCentral(container) {
         <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><label>Disponíveis<input type="number" min="0" data-main-path="pontos.dadosVidaDisponiveis" value="${p.dadosVidaDisponiveis??(nivel+(state.treinamentos.treinoResistencia?.[1]?2:0))}"></label><label>Gastos<input type="number" min="0" data-main-path="pontos.dadosVidaGastos" value="${p.dadosVidaGastos||0}"></label></div>
       </section>
 
-      <section class="card visao-card visao-training-card">
-        <div class="section-title">Treinamentos</div>
-        <div class="sheet-training-list">${trainingList}</div>
-      </section>
-
       <section class="card visao-card visao-rd-card">
         <div class="section-title">RD (Redução de Dano)</div>
         <div class="sheet-rd-grid">${rdRows}</div>
@@ -554,6 +539,18 @@ function renderVisaoCentral(container) {
     for(const key of parts.slice(0,-1)){if(target[key]==null)target[key]=/^\d+$/.test(key)?[]:{};target=target[key];}
     target[parts.at(-1)]=value;
   };
+  const refreshResourceBars=()=>{
+    const points=resourcePoints(state);
+    for(const [key,current,max,temp] of [["pv","pvAtual","pvMax","pvTemp"],["pe","peAtual","peMax","peTemp"]]){
+      const tracker=container.querySelector(key==="pv"?".visao-tracker:first-child":".visao-tracker:nth-child(2)");
+      const bar=tracker?.querySelector(".visao-tracker__bar");
+      if(!bar)continue;
+      const maximum=Math.max(1,Number(points[max])||0),currentPercent=Math.min(100,Math.max(0,(Number(points[current])||0)/maximum*100));
+      const fill=bar.querySelector(".visao-tracker__fill"),tempFill=bar.querySelector(".visao-tracker__fill-temp");
+      if(fill)fill.style.width=`${currentPercent}%`;
+      if(tempFill)tempFill.style.width=`${Math.min(100-currentPercent,Math.max(0,(Number(points[temp])||0)/maximum*100))}%`;
+    }
+  };
   container.querySelectorAll('[data-main-path]').forEach(field=>{
     const update=()=>{
       let value=field.type==='checkbox'?field.checked:field.value;
@@ -577,6 +574,10 @@ function renderVisaoCentral(container) {
       scheduleSave();
       if(field.tagName!=='TEXTAREA'&&field.type!=='text')renderVisaoCentral(container);
     };
+    if(field.type==='number'&&/\.((pv|pe|estamina)Temp)$/.test(field.dataset.mainPath))field.addEventListener('input',()=>{
+      const value=field.value===''?0:Math.max(0,Number(field.value)||0);
+      writeSheetPath(field.dataset.mainPath,value);refreshResourceBars();scheduleSave();
+    });
     if(field.tagName==='TEXTAREA')field.addEventListener('input',update);
     else if(field.type==='text')field.addEventListener('change',update);
     else field.addEventListener('change',update);

@@ -8,7 +8,7 @@ export function rollTest(bonus, random = Math.random) {
 
 export function installRolls() {
   const history = [];
-  const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='css/roll-notifications.css';document.head.append(stylesheet);
+  const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='css/roll-notifications.css?v=20261115-mobile-temp-1';document.head.append(stylesheet);
   const stack=document.createElement('section');stack.className='roll-notifications';stack.setAttribute('aria-label','Resultados de rolagens');
   const announcement=document.createElement('div');announcement.className='roll-sr-only';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.setAttribute('aria-atomic','true');
   const historyPanel=document.createElement('details');historyPanel.className='roll-history';historyPanel.hidden=true;
@@ -53,3 +53,4 @@ export function installRolls() {
     notify(name,roll);
   });
 }
+
