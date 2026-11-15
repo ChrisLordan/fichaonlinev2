@@ -61,7 +61,7 @@ export function pendenciasPorNivel(char) {
   const nivel = char.identificacao?.nivel || 1;
   const idf = char.identificacao || {};
   const esp = ESPECIALIZACOES.find(e => e.id === idf.especializacao);
-  const aptidoes = char.aptidoes || [];
+  const aptidoes = char.aptidoes || {};
   const habilidades = char.habilidades || [];
   const tab = tabelaPorEspecializacao(idf.especializacao);
   const ganhoAtual = tab.find(t => t.nivel === nivel);
@@ -106,10 +106,13 @@ export function pendenciasPorNivel(char) {
 
   // 4. Aptidões amaldiçoadas (1 por nível, todas as especializações)
   const esperado = nivel;
-  if (idf.especializacao!=='Restringido' && aptidoes.length < esperado) {
+  const escolhasAptidao = aptidoes.escolhas && typeof aptidoes.escolhas === 'object'
+    ? Object.values(aptidoes.escolhas).filter(Boolean).length
+    : Object.entries(aptidoes).filter(([key]) => !['completas', 'escolhas'].includes(key)).reduce((sum, [, value]) => sum + (Number(value) || 0), 0);
+  if (idf.especializacao!=='Restringido' && escolhasAptidao < esperado) {
     pendencias.push({
       tipo: "aptidao",
-      texto: `${esperado - aptidoes.length} aptidão(ões) amaldiçoada(s) pendente(s) (1 por nível)`,
+      texto: `${esperado - escolhasAptidao} aptidão(ões) amaldiçoada(s) pendente(s) (1 por nível)`,
       nivel,
     });
   }

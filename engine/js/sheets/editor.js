@@ -1719,13 +1719,33 @@ function renderHabilidades(container, initial='origem') {
   function renderAptidoes(body) {
     if(isRestricted(state)){renderGifts(body,state,()=>{recalcularPontos(state);scheduleSave();}).catch(e=>body.textContent=e.message);return;}
     if (!state.aptidoes) state.aptidoes = { aura: 0, controle: 0, dominio: 0, barreira: 0, energiaReversa: 0, completas: {} };
+    state.aptidoes.escolhas ||= {};
 
     body.innerHTML = `
       <div class="card">
-        <div class="section-title">Aptidões Amaldiçoadas <small>uma por nível. Cap 8 do livro.</small></div>
+        <div class="section-title">Aptidões Amaldiçoadas <small>Escolha uma aptidão para cada nível e ajuste os níveis livremente.</small></div>
+        <div class="grid grid-auto" id="apt-level-choices"></div>
+        <div class="section-title" style="margin-top: var(--gap-4);">Níveis de cada aptidão</div>
         <div class="grid grid-auto" id="apt-grid"></div>
       </div>
     `;
+    const choices = body.querySelector("#apt-level-choices");
+    const characterLevel = Math.max(1, Number(state.identificacao?.nivel) || 1);
+    for (let level = 1; level <= characterLevel; level++) {
+      const row = document.createElement("label");
+      row.className = "field";
+      row.innerHTML = `<span>Nível ${level}</span><select class="select" data-apt-choice="${level}"><option value="">Selecione uma aptidão</option>${APTIDOES.map(a => `<option value="${a.id}">${a.nome}</option>`).join("")}</select>`;
+      row.querySelector("select").value = state.aptidoes.escolhas[level] || "";
+      choices.appendChild(row);
+    }
+    choices.querySelectorAll("[data-apt-choice]").forEach(select => {
+      select.onchange = () => {
+        const level = select.dataset.aptChoice;
+        if (select.value) state.aptidoes.escolhas[level] = select.value;
+        else delete state.aptidoes.escolhas[level];
+        scheduleSave();
+      };
+    });
     const grid = body.querySelector("#apt-grid");
     APTIDOES.forEach(a => {
       const nivel = state.aptidoes[a.id] || 0;
@@ -1735,14 +1755,10 @@ function renderHabilidades(container, initial='origem') {
       card.innerHTML = `
         <div class="row" style="margin-bottom: var(--gap-2);">
           <strong style="color: var(--text-accent);">${a.nome}</strong>
-          <span class="tag">Nv ${nivel}/4</span>
+          <span class="tag">Nv ${nivel}</span>
         </div>
         <p class="text-xs text-soft" style="margin-bottom: var(--gap-2);">${a.descricao}</p>
-        <div class="row" style="margin-bottom: var(--gap-2);">
-          <button class="btn btn--subtle btn--sm" data-apt="${a.id}" data-d="-1">−</button>
-          <span class="text-mono" style="min-width: 24px; text-align: center;">${nivel}</span>
-          <button class="btn btn--subtle btn--sm" data-apt="${a.id}" data-d="1">+</button>
-        </div>
+        <label class="field">Nível atual<input class="input" type="number" min="0" step="1" data-apt-level="${a.id}" value="${nivel}"></label>
         <div class="text-xs">
           ${a.etapas.slice(0, nivel).map(e => `<div style="padding: var(--gap-1) 0; border-top: 1px dashed var(--border-soft);"><strong>${e.nivel}. ${e.nome}</strong> — ${e.desc}</div>`).join("")}
         </div>
@@ -1755,11 +1771,9 @@ function renderHabilidades(container, initial='origem') {
       grid.appendChild(card);
     });
 
-    body.querySelectorAll("[data-apt]").forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.dataset.apt;
-        const d = Number(btn.dataset.d);
-        state.aptidoes[id] = Math.max(0, Math.min(4, (state.aptidoes[id] || 0) + d));
+    body.querySelectorAll("[data-apt-level]").forEach(input => {
+      input.onchange = () => {
+        state.aptidoes[input.dataset.aptLevel] = Math.max(0, Math.floor(Number(input.value) || 0));
         renderAptidoes(body);
         scheduleSave();
       };
