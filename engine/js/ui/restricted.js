@@ -5,13 +5,13 @@ export function renderMartial(root,char,save){
  char.estiloMarcial ||= {nome:'',fundamento:'',tecnicas:[]};const m=char.estiloMarcial,nivel=char.identificacao.nivel;
  const maxLevel=nivel>=15?4:nivel>=9?3:nivel>=5?2:1,limit=2+Math.floor((nivel-1)/2),cost={1:2,2:5,3:8,4:12};
  function field(parent,label,key,obj,multiline=false){const l=make('label',label,'field'),input=make(multiline?'textarea':'input',null,multiline?'textarea':'input');input.value=obj[key]||'';if(multiline)input.rows=4;input.oninput=()=>{obj[key]=input.value;save();};l.append(input);parent.append(l);}
- function render(){root.replaceChildren(make('h3','Estilo e Técnicas Marciais'),make('p',`Livro p.124 e 247–248. ${m.tecnicas.length}/${limit} técnicas; acesso até nível ${maxLevel}.`,'text-soft'));field(root,'Nome do Estilo','nome',m);field(root,'Fundamento Marcial','fundamento',m,true);
+ function render(){root.replaceChildren(make('h3','Estilo e Técnicas Marciais'),make('p',`${m.tecnicas.length}/${limit} técnicas; acesso até nível ${maxLevel}.`,'text-soft'));field(root,'Nome do Estilo','nome',m);field(root,'Fundamento Marcial','fundamento',m,true);
  m.tecnicas.forEach((t,index)=>{const card=make('section',null,'card');field(card,'Nome da técnica','nome',t);const label=make('label','Nível','field'),select=make('select',null,'select');for(let level=1;level<=Math.max(maxLevel,Number(t.nivel));level++){const option=new Option(`Nível ${level} — ${cost[level]} Estamina`,level);option.disabled=level>maxLevel;select.add(option);}select.value=t.nivel;select.onchange=()=>{t.nivel=Number(select.value);t.custo=cost[t.nivel];save();};label.append(select);card.append(label);field(card,'Descrição e efeitos (confirme com o Narrador)','descricao',t,true);const remove=make('button','Remover técnica','btn btn--danger');remove.onclick=()=>{m.tecnicas.splice(index,1);save();render();};card.append(remove);root.append(card);});
  const add=make('button','Adicionar Técnica Marcial','btn btn--primary');add.disabled=m.tecnicas.length>=limit;add.onclick=()=>{m.tecnicas.push({nome:'',nivel:1,custo:2,descricao:''});save();render();};root.append(add);
  }render();
 }
 export async function renderGifts(root,char,save){root.textContent='Carregando Dádivas do Céu…';const {gifts}=await load();char.dadivas ||= [];const limit=Math.floor(char.identificacao.nivel/4)+(char.treinamentos?.potencialFisico?.[3]?1:0);
- function render(){root.replaceChildren(make('h3','Dádivas do Céu'),make('p',`${char.dadivas.length}/${limit} dádivas. Livro p.126.`));for(const gift of gifts){const panel=make('details',null,'ability-entry');panel.append(make('summary',gift.nome),make('p',gift.descricao));const selected=char.dadivas.includes(gift.id),button=make('button',selected?'Remover':'Selecionar','btn btn--subtle');button.disabled=!selected&&char.dadivas.length>=limit;button.onclick=()=>{char.dadivas=selected?char.dadivas.filter(id=>id!==gift.id):[...char.dadivas,gift.id];save();render();};panel.append(button);root.append(panel);}}render();
+ function render(){root.replaceChildren(make('h3','Dádivas do Céu'),make('p',`${char.dadivas.length}/${limit} dádivas.`));for(const gift of gifts){const panel=make('details',null,'ability-entry');panel.append(make('summary',gift.nome),make('p',gift.descricao));const selected=char.dadivas.includes(gift.id),button=make('button',selected?'Remover':'Selecionar','btn btn--subtle');button.disabled=!selected&&char.dadivas.length>=limit;button.onclick=()=>{char.dadivas=selected?char.dadivas.filter(id=>id!==gift.id):[...char.dadivas,gift.id];save();render();};panel.append(button);root.append(panel);}}render();
 }
 export async function renderTraining(root,char,save){
  root.textContent='Carregando treinamentos…';const {trainings}=await load();char.treinamentos ||= {};
@@ -29,6 +29,6 @@ export async function renderTraining(root,char,save){
    check.onchange=()=>{values[i]=check.checked;values[4]=values.slice(0,4).every(Boolean);update();save();};
    label.append(check);row.append(note,label);panel.append(row);
   }
-  panel.append(completed,make('p',training.completo?.replace(/\s+/g,' ').trim()||'Consulte o benefício no livro.','training-benefit'),make('small',`Livro v2.5.2 · p. ${training.pagina}`));update();grid.append(panel);
+  panel.append(completed,make('p',training.completo?.replace(/\s+/g,' ').trim()||'Consulte o benefício no livro.','training-benefit'));update();grid.append(panel);
  }
 }

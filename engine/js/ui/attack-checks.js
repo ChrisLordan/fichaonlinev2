@@ -13,5 +13,5 @@ export function renderAttackChecks(root,char,save){
   function update(){const total=modificador(char.atributos[item.atributo])+Math.floor(char.identificacao.nivel/2)+(item.treinado?bonusTreinamento(char.identificacao.nivel):0);button.textContent=`${name} ${total>=0?'+':''}${total} ⚄`;button.dataset.rollName=`Acerto ${name}`;button.dataset.rollBonus=total;}
   select.onchange=()=>{item.atributo=select.value;update();save();};training.onchange=()=>{item.treinado=training.checked;update();save();};update();row.append(button,select,label);section.append(row);
  }
- const source=document.createElement('small');source.textContent='Livro p.279: 1d20 + atributo + metade do nível + treinamento (se aplicável). Marque Treinado conforme a arma utilizada.';section.append(source);root.append(section);
+ const source=document.createElement('small');source.textContent='1d20 + atributo + metade do nível + treinamento (se aplicável). Marque Treinado conforme a arma utilizada.';section.append(source);root.append(section);
 }

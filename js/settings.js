@@ -2,6 +2,7 @@ import {applyColors} from './theme.js';
 import {createColorPicker,paletteFromColor} from './color-picker.js';
 import {installResponsive} from './responsive.js';
 import {configureRgb} from './rgb-theme.js';
+import {installBookReferenceCleanup} from './book-references.js';
 const KEY='jujutsu-preferences';
 export function getPreferences(){try{return {rollDuration:10,disableRollHistory:false,rgbMode:false,colors:{},...JSON.parse(localStorage.getItem(KEY)||'{}')};}catch{return {rollDuration:10,disableRollHistory:false,rgbMode:false,colors:{}};}}
 export function installSettings(){
@@ -9,6 +10,7 @@ export function installSettings(){
   configureRgb(getPreferences().rgbMode,getPreferences().colors);
   installResponsive();
   if(document.querySelector('#site-settings'))return;
+  installBookReferenceCleanup();
   const nav=document.querySelector('.site-header nav,.portal-nav nav');if(!nav)return;
   for(const name of ['settings','color-picker'])if(!document.querySelector(`link[href$="css/${name}.css"]`)){const css=document.createElement('link');css.rel='stylesheet';css.href=new URL(`../css/${name}.css`,import.meta.url).href;document.head.append(css);}
   const button=document.createElement('button');button.type='button';button.className='settings-toggle';button.textContent='⚙ Configurações';button.setAttribute('aria-haspopup','dialog');nav.append(button);

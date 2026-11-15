@@ -24,7 +24,7 @@ export async function renderAbilityCatalog(root,sheet,onChange=()=>{}){
       if(current&&current!==anchor)current.setAttribute('aria-expanded','false');current=anchor;
       note.replaceChildren();note.hidden=false;
       const closeButton=make('button','×','ability-note__close');closeButton.type='button';closeButton.setAttribute('aria-label','Fechar nota');closeButton.onclick=close;
-      note.append(closeButton,make('h4',a.nome),make('small',`${a.tipo||'Registro anterior'}${a.nivel?` · Nível ${a.nivel}`:''}${a.pagina?` · Livro, p. ${a.pagina}`:''}`),make('p',a.descricao||'Sem descrição.'));
+      note.append(closeButton,make('h4',a.nome),make('small',`${a.tipo||'Registro anterior'}${a.nivel?` · Nível ${a.nivel}`:''}`),make('p',a.descricao||'Sem descrição.'));
       if(a.requisitos)note.append(make('p',a.requisitos,'text-warning'));
       const owned=sheet.especializacaoDetalhes.habilidades.some(h=>h.catalogId===a.id);
       if(a.tipo==='Escolha'&&a.id){

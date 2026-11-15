@@ -14,7 +14,7 @@ import { toast } from '../ui/toast.js';
 import { CUSTOM_ORIGIN, customOriginForm } from '../ui/custom-origin.js';
 import { renderAbilityCatalog } from '../ui/ability-catalog.js';
 import {isRestricted,resourcePoints,labelResources} from '../data/resources.js';
-import {renderMartial,renderGifts,renderTraining} from '../ui/restricted.js?v=20261115-training-2';
+import {renderMartial,renderGifts,renderTraining} from '../ui/restricted.js?v=20261115-clean-interface-3';
 import {renderAttackChecks} from '../ui/attack-checks.js';
 import { confirmDialog, promptDialog, openModal, alertDialog, el } from '../ui/modais.js';
 
