@@ -164,7 +164,8 @@ function renderVisaoCentral(container) {
   const p = resourcePoints(state);
   const restricted = isRestricted(state);
   const resourceName = restricted ? "Estamina" : "Energia Amaldiçoada";
-  const resourceShort = restricted ? "Est." : "PE";
+  const resourceShort = restricted ? "Estamina" : "PE";
+  const resourceFieldPrefix = restricted ? "estamina" : "pe";
   const d = derivar(state);
   const nivel = idf.nivel || 1;
   const btInfo = infoBonusTreinamento(nivel);
@@ -172,20 +173,47 @@ function renderVisaoCentral(container) {
   const originName = idf.origem === CUSTOM_ORIGIN ? (state.origemPersonalizada?.nome || "Origem Personalizada") : idf.origem;
   const clanName = idf.clan || "—";
   const campaignName = idf.campanha || "—";
-  const abilityList = [...(state.especializacaoDetalhes?.habilidades || []), ...(state.talentos || [])];
+  state.especializacaoDetalhes ||= { habilidades: [] };
+  state.especializacaoDetalhes.habilidades ||= [];
+  state.talentos ||= [];
+  const abilityList = [
+    ...state.especializacaoDetalhes.habilidades.map((entry,index)=>({entry,path:`especializacaoDetalhes.habilidades.${index}`})),
+    ...state.talentos.map((entry,index)=>({entry,path:`talentos.${index}`}))
+  ];
   const deathState = state.testesMorte ||= { sucessos: [false,false,false], falhas: [false,false,false] };
+  state.defesa ||= { equipamento: 0, outros: 0, deslocamento: 9, iniciativaOutros: 0 };
+  state.cd ||= { especializacao: { atributo: "forca", outros: 0 }, amaldicoado: { atributo: "presenca", outros: 0 } };
+  state.cd.especializacao ||= { atributo: "forca", outros: 0 };
+  state.cd.amaldicoado ||= { atributo: "presenca", outros: 0 };
+  state.integridade ||= { estado: "Estável", rd: 0 };
+  state.rd ||= {};
+  state.resistencias ||= { descricao: "" };
+  state.treinamentos ||= {};
+  state.pericias ||= {};
+  state.testesResistencia ||= {};
+  state.ataques ||= [];
+  state.aspectos ||= {};
+  state.aparencia ||= {};
+  state.pontos.extras ||= {};
+  const sheetField=(label,path,value,type="text")=>`<label class="sheet-header-cell"><small>${label}</small><input data-main-path="${path}" type="${type}" value="${escapeHtml(value ?? "")}"></label>`;
+  const sheetSelect=(label,path,value,options)=>`<label class="sheet-header-cell"><small>${label}</small><select data-main-path="${path}">${options.map(option=>`<option value="${escapeHtml(option.value)}" ${option.value===value?'selected':''}>${escapeHtml(option.label)}</option>`).join('')}</select></label>`;
   const trainingList = [
     ["agilidade","Treino de Agilidade"],["barreiras","Treino de Barreiras"],["compreensao","Treino de Compreensão"],
     ["controleEnergia","Controle de Energia"],["treinoDominios","Treino de Domínios"],["energiaReversa","Energia Reversa"],
     ["luta","Treino de Luta"],["manejoArma","Manejo de Arma"],["pericia","Treino de Perícia"],
     ["potencialFisico","Potencial Físico"],["treinoResistencia","Treino de Resistência"],
   ].map(([key,label]) => {
-    const stages=state.treinamentos?.[key]||[];
-    const count=Array.isArray(stages)?stages.slice(0,4).filter(Boolean).length:0;
-    return count ? `<div><span>${label}</span><strong>${count}/4</strong></div>` : "";
+    state.treinamentos[key] ||= [false,false,false,false,false];
+    const stages=state.treinamentos[key];
+    return `<div class="sheet-training-row"><strong>${label}</strong>${[0,1,2,3].map(i=>`<label title="${i+1}ª etapa">${i+1}<input type="checkbox" data-main-path="treinamentos.${key}.${i}" ${stages[i]?'checked':''}></label>`).join('')}<label title="Treinamento completo">✓<input type="checkbox" data-main-path="treinamentos.${key}.4" ${stages[4]?'checked':''}></label></div>`;
   }).join("");
   const aspectLabels={personalidade:"Personalidade",ideais:"Ideais",ligacoes:"Ligações",complicacoes:"Complicações"};
-  const aspectsHtml=Object.entries(aspectLabels).filter(([key])=>state.aspectos?.[key]).map(([key,label])=>`<p><strong>${label}:</strong> ${escapeHtml(state.aspectos[key])}</p>`).join("");
+  const aspectsHtml=Object.entries(aspectLabels).map(([key,label])=>`<label class="sheet-aspect-field"><span>${label}</span><textarea data-main-path="aspectos.${key}" rows="2">${escapeHtml(state.aspectos[key]||'')}</textarea></label>`).join("");
+  const rdRows=TIPOS_DANO.map(type=>`<label><span>${type.slice(0,3).toUpperCase()}</span><input aria-label="RD ${type}" type="number" min="0" data-main-path="rd.${type}" value="${Number(state.rd[type])||0}"></label>`).join("");
+  const resistanceOptions=(value)=>['—','Resistência','Imunidade','Vulnerabilidade'].map(label=>`<option value="${label}" ${value===label?'selected':''}>${label}</option>`).join('');
+  const resistanceRows=TIPOS_DANO.map(type=>`<label><span>${type}</span><select data-main-path="resistencias.${type}">${resistanceOptions(state.resistencias[type])}</select></label>`).join('');
+  state.pontos.dadosVidaDisponiveis ??= nivel;
+  state.pontos.dadosVidaGastos ??= 0;
 
   const ATRIBUTOS = [
     { id: "forca", nome: "Força", abbr: "FOR" },
@@ -197,45 +225,35 @@ function renderVisaoCentral(container) {
   ];
 
   const pericias = state.pericias || {};
-  const periciaRows = [...PERICIAS,...TESTES_RESISTENCIA.map(p=>({...p,tr:true}))].map(per => {
-    const pd = (per.tr?state.testesResistencia:pericias)?.[per.id] || {};
-    const mod = d.mods[per.atributo] || 0;
-    const tot = totalPericia({
-      modAtributo: mod,
-      treinado: !!pd.treino,
-      mestre: !!pd.mestre,
-      nivel,
-      outros: pd.outros || 0,
-      prof: bonusTreinamento(nivel),
-    });
-    const tags = [];
-    if (pd.treino) tags.push('<span class="tag tag--accent" style="font-size:9px;padding:1px 5px;">T</span>');
-    if (pd.mestre) tags.push('<span class="tag" style="font-size:9px;padding:1px 5px;background:color-mix(in srgb, var(--site-color-4ade80, #4ade80) 15%, transparent);border-color:color-mix(in srgb, var(--site-color-4ade80, #4ade80) 30%, transparent);color:var(--success);">M</span>');
-    return `
-      <button type="button" class="visao-pericia roll-trigger" data-roll-name="${escapeHtml(per.nome)}" data-roll-bonus="${tot}" title="Rolar ${escapeHtml(per.nome)}">
-        <span class="visao-pericia__nome">${per.nome}${per.tr?' (TR)':''}</span>
-        <span class="visao-pericia__total">${formatMod(tot)}</span>
-        <span class="visao-pericia__tags">${tags.join("")}</span>
-      </button>
-    `;
-  }).join("");
-
+  function sheetCheckRows(list, isResistance=false) {
+    return list.map(per => {
+      const pd = (isResistance?state.testesResistencia:pericias)?.[per.id] || {};
+      const mod = d.mods[per.atributo] || 0;
+      const tot = totalPericia({modAtributo:mod,treinado:!!pd.treino,mestre:!!pd.mestre,nivel,outros:pd.outros||0,prof:bonusTreinamento(nivel)});
+      const path=(isResistance?'testesResistencia':'pericias')+'.'+per.id;
+      return `<div class="visao-pericia-entry">
+        <button type="button" class="visao-pericia roll-trigger" data-roll-name="${escapeHtml(per.nome)}${isResistance?' TR':''}" data-roll-bonus="${tot}" title="Rolar ${escapeHtml(per.nome)}"><span class="visao-pericia__nome">${per.nome}</span><span class="visao-pericia__total">${formatMod(tot)}</span></button>
+        <div class="sheet-skill-edit"><label title="Treinado">T<input type="checkbox" data-main-path="${path}.treino" ${pd.treino?'checked':''}></label><label title="Mestre">M<input type="checkbox" data-main-path="${path}.mestre" ${pd.mestre?'checked':''}></label><input type="number" aria-label="Outros em ${escapeHtml(per.nome)}" data-main-path="${path}.outros" value="${Number(pd.outros)||0}"></div>
+      </div>`;
+    }).join('');
+  }
+  const periciaRows=sheetCheckRows(PERICIAS), trRows=sheetCheckRows(TESTES_RESISTENCIA,true);
   // Função para gerar lista de ataques
   const ataques = state.ataques || [];
-  const atkRows = ataques.map(a => {
+  const atkRows = ataques.map((a,i) => {
     const mod = d.mods[a.atributo] || 0;
     const bonus = mod + (a.bonus || 0) + bonusTreinamento(nivel) + Math.floor(nivel/2);
     return `
-      <div class="visao-atk">
-        <div>
-          <button type="button" class="visao-atk__nome roll-trigger" data-roll-name="Ataque: ${escapeHtml(a.nome)}" data-roll-bonus="${bonus}">${escapeHtml(a.nome)} ⚄</button>
-          <div class="visao-atk__meta text-xs text-mute">${a.alcance || "—"} • ${a.tipo || "—"}</div>
-        </div>
-        <div class="text-right">
-          <div class="text-mono text-accent" style="font-size: var(--fs-md); font-weight: 600;">${formatMod(bonus)}</div>
-          <div class="text-mono text-xs text-soft">${a.dano || "1d8"}</div>
-        </div>
-      </div>
+      <tr>
+        <td><input data-main-path="ataques.${i}.nome" value="${escapeHtml(a.nome||'Novo ataque')}" aria-label="Nome do ataque"><button type="button" class="roll-trigger" data-roll-name="Ataque: ${escapeHtml(a.nome)}" data-roll-bonus="${bonus}">Rolar ⚄</button></td>
+        <td><select data-main-path="ataques.${i}.atributo" aria-label="Atributo de ${escapeHtml(a.nome)}">${ATRIBUTOS.map(attr=>`<option value="${attr.id}" ${a.atributo===attr.id?'selected':''}>${attr.abbr}</option>`).join('')}</select><input type="number" data-main-path="ataques.${i}.bonus" value="${Number(a.bonus)||0}" aria-label="Bônus de ${escapeHtml(a.nome)}"></td>
+        <td><input data-main-path="ataques.${i}.dano" value="${escapeHtml(a.dano||'1d8')}" aria-label="Dano de ${escapeHtml(a.nome)}"></td>
+        <td><input type="number" min="2" max="20" data-main-path="ataques.${i}.critico" value="${a.critico||20}" aria-label="Crítico de ${escapeHtml(a.nome)}"></td>
+        <td><input data-main-path="ataques.${i}.tipo" value="${escapeHtml(a.tipo||'Ct')}" aria-label="Tipo de dano"></td>
+        <td><input data-main-path="ataques.${i}.alcance" value="${escapeHtml(a.alcance||'')}" aria-label="Alcance de ${escapeHtml(a.nome)}"></td>
+        <td><input data-main-path="ataques.${i}.propriedades" value="${escapeHtml(a.propriedades||'')}" aria-label="Propriedades de ${escapeHtml(a.nome)}"></td>
+        <td><button class="btn btn--danger btn--sm" type="button" data-main-remove-attack="${i}" aria-label="Remover ataque">×</button></td>
+      </tr>
     `;
   }).join("");
 
@@ -244,16 +262,16 @@ function renderVisaoCentral(container) {
       <header class="card visao-identificacao">
         <div class="visao-identificacao__brand"><strong>FEITICEIROS &amp; MALDIÇÕES</strong><small>FICHA DE PERSONAGEM</small></div>
         <div class="visao-identificacao__grid">
-          <div><small>Nome</small><strong>${escapeHtml(idf.nome || "Sem nome")}</strong></div>
-          <div><small>Jogador</small><strong>${escapeHtml(idf.jogador || "—")}</strong></div>
-          <div><small>Origem</small><strong>${escapeHtml(originName || "—")}</strong></div>
-          <div><small>Especialização</small><strong>${escapeHtml(idf.especializacao || "—")}</strong></div>
-          <div><small>Clã</small><strong>${escapeHtml(clanName)}</strong></div>
-          <div><small>Campanha</small><strong>${escapeHtml(campaignName)}</strong></div>
-          <div><small>Grau</small><strong>${escapeHtml(idf.grau || "—")}</strong></div>
-          <div><small>Experiência</small><strong>${Number(idf.exp)||0} XP</strong></div>
-          <div><small>Nível</small><strong>${nivel}</strong></div>
-          <div><small>Treinamento</small><strong>+${d.prof}</strong></div>
+          ${sheetField("Nome","identificacao.nome",idf.nome)}
+          ${sheetField("Jogador","identificacao.jogador",idf.jogador)}
+          ${sheetSelect("Origem","identificacao.origem",idf.origem,[...ORIGENS.map(o=>({value:o.id,label:o.nome})),...(idf.origem===CUSTOM_ORIGIN?[{value:CUSTOM_ORIGIN,label:originName}]:[])])}
+          ${sheetSelect("Especialização","identificacao.especializacao",idf.especializacao,ESPECIALIZACOES.map(e=>({value:e.id,label:e.nome})))}
+          ${sheetField("Clã","identificacao.clan",clanName)}
+          ${sheetField("Campanha","identificacao.campanha",campaignName)}
+          ${sheetSelect("Grau","identificacao.grau",idf.grau,GRAUS.map(g=>({value:g,label:g})))}
+          ${sheetField("Experiência","identificacao.exp",idf.exp||0,"number")}
+          ${sheetField("Nível","identificacao.nivel",nivel,"number")}
+          <div class="sheet-header-cell"><small>Treinamento</small><strong>+${d.prof}</strong></div>
         </div>
       </header>
 
@@ -269,16 +287,23 @@ function renderVisaoCentral(container) {
               <div class="visao-tracker__fill" style="width: ${Math.min(100, (p.pvAtual / Math.max(1, p.pvMax)) * 100)}%;"></div>
               ${p.pvTemp ? `<div class="visao-tracker__fill-temp" style="width: ${Math.min(100 - Math.min(100, (p.pvAtual / Math.max(1, p.pvMax)) * 100), (p.pvTemp / Math.max(1, p.pvMax)) * 100)}%;"></div>` : ""}
             </div>
-            <div class="row row--between" style="margin-top: 6px;">
-              <span class="text-mono" style="font-size: var(--fs-2xl); font-weight: 700; color: var(--text-base);">${p.pvAtual ?? 0}${p.pvTemp ? ` <span style="font-size: var(--fs-md); color: var(--success);">(+${p.pvTemp})</span>` : ""}</span>
-              <span class="text-mono text-soft">/ ${p.pvMax ?? 0}</span>
+            <div class="sheet-resource-head"><span>Atuais</span><span>Perdidos</span><span>Máximos</span></div>
+            <div class="sheet-resource-values">
+              <input class="input input--mono" data-main-path="pontos.pvAtual" type="number" min="0" value="${p.pvAtual ?? 0}" aria-label="PV atuais">
+              <strong>${Math.max(0,(p.pvMax||0)-(p.pvAtual||0))}</strong>
+              <input class="input input--mono" data-main-path="pontos.pvMax" type="number" min="0" value="${p.pvMax ?? 0}" aria-label="PV máximos">
             </div>
+            <label class="sheet-temp-value">PV temporários<input type="number" min="0" data-main-path="pontos.pvTemp" value="${p.pvTemp ?? 0}"></label>
             <div class="visao-tracker__btns">
               <button class="visao-btn" data-pv-step="-5" aria-label="−5 PV">−5</button>
               <button class="visao-btn" data-pv-step="-1" aria-label="−1 PV">−</button>
               <button class="visao-btn" data-pv-step="1" aria-label="+1 PV">+</button>
               <button class="visao-btn" data-pv-step="5" aria-label="+5 PV">+5</button>
             </div>
+            <details class="sheet-resource-extras"><summary>Extras</summary>
+              ${[['kamo','Kamo'],['robustez','Robustez'],['desexa','Des. Exa.'],['vigorInfindavel','Vigor Inf.']].map(([key,label])=>`<label>${label}<input type="checkbox" data-main-path="pontos.extras.${key}" ${p.extras?.[key]?'checked':''}></label>`).join('')}
+              <label>Outros<input type="number" data-main-path="pontos.extras.outros" value="${Number(p.extras?.outros)||0}"></label>
+            </details>
           </div>
           <div class="visao-tracker">
             <div class="row row--between">
@@ -289,10 +314,13 @@ function renderVisaoCentral(container) {
               <div class="visao-tracker__fill" style="width: ${Math.min(100, (p.peAtual / Math.max(1, p.peMax)) * 100)}%; background: linear-gradient(90deg, var(--site-color-790c1a, #790c1a), var(--site-color-ff263e, #ff263e));"></div>
               ${p.peTemp ? `<div class="visao-tracker__fill-temp" style="width: ${Math.min(100 - Math.min(100, (p.peAtual / Math.max(1, p.peMax)) * 100), (p.peTemp / Math.max(1, p.peMax)) * 100)}%;"></div>` : ""}
             </div>
-            <div class="row row--between" style="margin-top: 6px;">
-              <span class="text-mono" style="font-size: var(--fs-2xl); font-weight: 700; color: var(--text-base);">${p.peAtual ?? 0}${p.peTemp ? ` <span style="font-size: var(--fs-md); color: var(--success);">(+${p.peTemp})</span>` : ""}</span>
-              <span class="text-mono text-soft">/ ${p.peMax ?? 0}</span>
+            <div class="sheet-resource-head"><span>Atuais</span><span>Perdidos</span><span>Máximos</span></div>
+            <div class="sheet-resource-values">
+              <input class="input input--mono" data-main-path="pontos.${resourceFieldPrefix}Atual" type="number" min="0" value="${p.peAtual ?? 0}" aria-label="${resourceName} atuais">
+              <strong>${Math.max(0,(p.peMax||0)-(p.peAtual||0))}</strong>
+              <input class="input input--mono" data-main-path="pontos.${resourceFieldPrefix}Max" type="number" min="0" value="${p.peMax ?? 0}" aria-label="${resourceName} máximos">
             </div>
+            <label class="sheet-temp-value">${resourceName} temporária<input type="number" min="0" data-main-path="pontos.${resourceFieldPrefix}Temp" value="${p.peTemp ?? 0}"></label>
             <div class="visao-tracker__btns">
               <button class="visao-btn" data-pe-step="-5" aria-label="−5 PE">−5</button>
               <button class="visao-btn" data-pe-step="-1" aria-label="−1 PE">−</button>
@@ -307,17 +335,28 @@ function renderVisaoCentral(container) {
               <span class="tracker__sep">/</span>
               <input class="input input--mono" type="number" min="0" data-ia-max value="${p.integridadeMax ?? p.pvMax ?? 10}" aria-label="Integridade máxima">
             </div>
+            <div class="sheet-integrity-extra">
+              <label>Estado<input data-main-path="integridade.estado" value="${escapeHtml(state.integridade?.estado||"Estável")}"></label>
+              <label>RD<input type="number" data-main-path="integridade.rd" value="${Number(state.integridade?.rd)||0}"></label>
+            </div>
           </div>
         </div>
         <div class="visao-stats">
           <div class="visao-stat">
             <div class="visao-stat__label">DEF</div>
             <div class="visao-stat__value">${d.defesa}</div>
+            <small>Base 10 · DES ${formatMod(d.mods.destreza)} · Nv ${Math.floor(nivel/2)}</small>
+            <label>Equip.<input type="number" data-main-path="defesa.equipamento" value="${Number(state.defesa.equipamento)||0}"></label>
+            <label>Outros<input type="number" data-main-path="defesa.outros" value="${Number(state.defesa.outros)||0}"></label>
           </div>
-          <button type="button" class="visao-stat roll-trigger" data-roll-name="Iniciativa" data-roll-bonus="${d.iniciativa}" title="Rolar iniciativa">
-            <div class="visao-stat__label">INIC ⚄</div>
-            <div class="visao-stat__value">${formatMod(d.iniciativa)}</div>
-          </button>
+          <div class="visao-stat">
+            <button type="button" class="roll-trigger" data-roll-name="Iniciativa" data-roll-bonus="${d.iniciativa}" title="Rolar iniciativa">
+              <div class="visao-stat__label">INIC ⚄</div>
+              <div class="visao-stat__value">${formatMod(d.iniciativa)}</div>
+            </button>
+            <small>DES ${formatMod(d.mods.destreza)}</small>
+            <label>Outros<input type="number" data-main-path="defesa.iniciativaOutros" value="${Number(state.defesa.iniciativaOutros)||0}"></label>
+          </div>
           <div class="visao-stat">
             <div class="visao-stat__label">ATEN</div>
             <div class="visao-stat__value">${d.atencao}</div>
@@ -328,7 +367,7 @@ function renderVisaoCentral(container) {
           </div>
           <div class="visao-stat">
             <div class="visao-stat__label">DESLOC.</div>
-            <div class="visao-stat__value">${state.defesa?.deslocamento || 9}m</div>
+            <div class="visao-stat__value"><input type="number" data-main-path="defesa.deslocamento" value="${state.defesa?.deslocamento || 9}" aria-label="Deslocamento em metros">m</div>
           </div>
           <div class="visao-stat" title="Bônus de Treinamento — ${btInfo.faixa}${btInfo.proxMudanca ? ` (próx. mudança nv ${btInfo.proxMudanca})` : ''}">
             <div class="visao-stat__label">BT</div>
@@ -361,7 +400,7 @@ function renderVisaoCentral(container) {
       <!-- Especializações (multiclasse) -->
       ${(() => {
         const lista = state.identificacao.especializacoes || [];
-        if (lista.length === 0) return "";
+        if (lista.length === 0) return `<div class="card visao-card visao-specializations"><strong>Especialização</strong><p class="text-xs text-mute">${escapeHtml(idf.especializacao || "—")} · Nv ${idf.nivel || 1}</p></div>`;
         return `
         <div class="card visao-card visao-specializations">
           <div class="row row--between" style="margin-bottom: var(--gap-2);">
@@ -414,18 +453,22 @@ function renderVisaoCentral(container) {
           <div class="text-xs text-soft text-uppercase" style="letter-spacing: 0.08em;">CD Esp.</div>
           <div class="text-mono text-accent" style="font-size: var(--fs-3xl); font-weight: 700; line-height: 1; margin: 4px 0;">${d.cdEspecializacao}</div>
           <div class="text-xs text-mute">8 + mod + prof + nv/2</div>
+          <label>Atributo<select data-main-path="cd.especializacao.atributo">${ATRIBUTOS.map(a=>`<option value="${a.id}" ${state.cd.especializacao.atributo===a.id?"selected":""}>${a.abbr}</option>`).join("")}</select></label>
+          <label>Outros<input type="number" data-main-path="cd.especializacao.outros" value="${Number(state.cd.especializacao.outros)||0}"></label>
         </div>
         ${!restricted ? `<div class="card visao-card" style="text-align: center;">
           <div class="text-xs text-soft text-uppercase" style="letter-spacing: 0.08em;">CD Ama.</div>
           <div class="text-mono text-accent" style="font-size: var(--fs-3xl); font-weight: 700; line-height: 1; margin: 4px 0;">${d.cdAmaldicoado}</div>
           <div class="text-xs text-mute">8 + mod + prof + nv/2</div>
+          <label>Atributo<select data-main-path="cd.amaldicoado.atributo">${ATRIBUTOS.map(a=>`<option value="${a.id}" ${state.cd.amaldicoado.atributo===a.id?"selected":""}>${a.abbr}</option>`).join("")}</select></label>
+          <label>Outros<input type="number" data-main-path="cd.amaldicoado.outros" value="${Number(state.cd.amaldicoado.outros)||0}"></label>
         </div>` : ""}
       </div>
 
       <!-- Perícias -->
       <div class="card visao-card visao-skills-card">
         <div class="row row--between" style="margin-bottom: var(--gap-3);">
-          <strong>Perícias & Testes de Resistência</strong>
+          <strong>Perícias</strong>
           <span class="text-xs text-mute">Prof. atual: +${bonusTreinamento(nivel)}</span>
         </div>
         <div class="visao-pericias">
@@ -433,23 +476,31 @@ function renderVisaoCentral(container) {
         </div>
       </div>
 
+      <div class="card visao-card visao-resistance-tests-card">
+        <div class="section-title">Testes de Resistência</div>
+        <div class="visao-pericias">${trRows}</div>
+      </div>
+
       <!-- Ataques -->
       <div class="card visao-card visao-attacks-card">
           <div class="row row--between" style="margin-bottom: var(--gap-3);">
-            <strong>Ataques Principais</strong>
+            <strong>Ataques</strong>
             <span class="text-xs text-mute">${ataques.length} ${ataques.length === 1 ? "ataque" : "ataques"}</span>
           </div>
-          <div class="visao-ataques">
-            ${atkRows}
+          <div class="sheet-table-wrap">
+            <table class="sheet-table"><thead><tr><th>Arma</th><th>Atributo / Bônus</th><th>Dano</th><th>Crít.</th><th>Tipo</th><th>Alcance</th><th>Propriedades</th><th></th></tr></thead><tbody>
+            ${atkRows || '<tr><td colspan="8">Nenhum ataque adicionado.</td></tr>'}
+            </tbody></table>
           </div>
-          ${ataques.length === 0 ? '<p class="text-xs text-mute">Nenhum ataque cadastrado. Use Ataques & CDs no menu +.</p>' : ''}
+          <button type="button" class="btn btn--subtle btn--sm" data-main-add-attack>+ Adicionar ataque</button>
       </div>
 
       <section class="card visao-card visao-habilidades-card">
         <div class="section-title">Habilidades e Talentos</div>
-        <div class="visao-habilidades-lista">
-          ${abilityList.map(h => `<details><summary>${escapeHtml(h.nome || "Sem nome")}</summary><p>${escapeHtml(h.descricao || "Sem descrição.")}</p></details>`).join("") || '<p class="text-xs text-mute">Nenhuma habilidade ou talento adicionado.</p>'}
-        </div>
+        <div class="sheet-table-wrap"><table class="sheet-table"><thead><tr><th>Nome / descrição</th><th>Atual</th><th>Máx.</th><th>Custo</th><th></th></tr></thead><tbody>
+          ${abilityList.map(({entry,path},i)=>`<tr><td><input data-main-path="${path}.nome" value="${escapeHtml(entry.nome||'')}" placeholder="Nome da habilidade"><textarea data-main-path="${path}.descricao" rows="2" placeholder="Nota / descrição">${escapeHtml(entry.descricao||'')}</textarea></td><td><input type="number" data-main-path="${path}.atual" value="${Number(entry.atual)||0}"></td><td><input type="number" data-main-path="${path}.maximo" value="${Number(entry.maximo)||0}"></td><td><input data-main-path="${path}.custo" value="${escapeHtml(entry.custo||'')}"></td><td><button type="button" class="btn btn--danger btn--sm" data-main-remove-ability="${i}">×</button></td></tr>`).join('') || '<tr><td colspan="5">Nenhuma habilidade ou talento adicionado.</td></tr>'}
+        </tbody></table></div>
+        <div class="row sheet-add-actions"><button type="button" class="btn btn--subtle btn--sm" data-main-add-ability="especializacao">+ Habilidade</button><button type="button" class="btn btn--subtle btn--sm" data-main-add-ability="talento">+ Talento</button></div>
       </section>
 
       <section class="card visao-card visao-morte-card">
@@ -459,17 +510,29 @@ function renderVisaoCentral(container) {
 
       <section class="card visao-card visao-dados-vida">
         <div class="section-title">Dados de Vida</div>
-        <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><span>${nivel} dados disponíveis</span></div>
+        <div class="visao-life-dice"><strong>d${dadoVida(idf.especializacao)}</strong><label>Disponíveis<input type="number" min="0" data-main-path="pontos.dadosVidaDisponiveis" value="${p.dadosVidaDisponiveis??nivel}"></label><label>Gastos<input type="number" min="0" data-main-path="pontos.dadosVidaGastos" value="${p.dadosVidaGastos||0}"></label></div>
       </section>
 
       <section class="card visao-card visao-training-card">
         <div class="section-title">Treinamentos</div>
-        ${trainingList || '<p class="text-xs text-mute">Nenhum treinamento iniciado.</p>'}
+        <div class="sheet-training-list">${trainingList}</div>
+      </section>
+
+      <section class="card visao-card visao-rd-card">
+        <div class="section-title">RD (Redução de Dano)</div>
+        <div class="sheet-rd-grid">${rdRows}</div>
+      </section>
+
+      <section class="card visao-card visao-resistances-card">
+        <div class="section-title">Resistências</div>
+        <div class="sheet-resistance-list">${resistanceRows}</div>
+        <label class="field">Outras resistências<textarea rows="3" data-main-path="resistencias.descricao">${escapeHtml(state.resistencias.descricao||'')}</textarea></label>
       </section>
 
       <section class="card visao-card visao-characteristics-card">
         <div class="section-title">Características</div>
-        ${aspectsHtml || '<p class="text-xs text-mute">Adicione detalhes na seção Aspectos.</p>'}
+        ${aspectsHtml}
+        <div class="sheet-appearance-grid">${[['idade','Idade'],['altura','Altura'],['peso','Peso'],['genero','Gênero'],['cabelos','Cabelos'],['olhos','Olhos'],['pele','Pele'],['roupas','Roupas'],['marcas','Marcas']].map(([key,label])=>`<label>${label}<input data-main-path="aparencia.${key}" value="${escapeHtml(state.aparencia[key]||'')}"></label>`).join('')}</div>
       </section>
 
       <section class="card visao-card visao-notes-card">
@@ -482,6 +545,55 @@ function renderVisaoCentral(container) {
 
   // Atributos editáveis na visão central
   renderAttackChecks(container.querySelector('.visao-central'),state,scheduleSave);
+  const writeSheetPath=(path,value)=>{
+    const parts=path.split('.');let target=state;
+    for(const key of parts.slice(0,-1)){if(target[key]==null)target[key]=/^\d+$/.test(key)?[]:{};target=target[key];}
+    target[parts.at(-1)]=value;
+  };
+  container.querySelectorAll('[data-main-path]').forEach(field=>{
+    const update=()=>{
+      let value=field.type==='checkbox'?field.checked:field.value;
+      if(field.type==='number')value=value===''?'':Number(value);
+      if(field.dataset.mainPath==='identificacao.nivel'){value=Math.max(1,Math.min(20,Number(value)||1));}
+      if(field.dataset.mainPath==='identificacao.nivel')aplicarLevelUp(state,value);
+      else writeSheetPath(field.dataset.mainPath,value);
+      if(field.dataset.mainPath==='identificacao.especializacao'){
+        const primary=state.identificacao.especializacoes?.[0];
+        if(primary)primary.id=value;
+        else state.identificacao.especializacoes=[{id:value,nivel:Number(state.identificacao.nivel)||1}];
+        if(value==='Restringido')state.identificacao.origem='Restringido';
+      }
+      if(field.dataset.mainPath==='identificacao.origem'&&value==='Restringido'){
+        state.identificacao.especializacao='Restringido';
+        const primary=state.identificacao.especializacoes?.[0];
+        if(primary)primary.id='Restringido';
+      }
+      if(['identificacao.especializacao','identificacao.origem'].includes(field.dataset.mainPath))recalcularPontos(state);
+      if(field.dataset.mainPath==='pontos.pvMax')state.pontos.integridadeMax=Number(value)||0;
+      scheduleSave();
+      if(field.tagName!=='TEXTAREA'&&field.type!=='text')renderVisaoCentral(container);
+    };
+    if(field.tagName==='TEXTAREA')field.addEventListener('input',update);
+    else if(field.type==='text')field.addEventListener('change',update);
+    else field.addEventListener('change',update);
+  });
+  container.querySelectorAll('[data-main-add-attack]').forEach(button=>button.onclick=()=>{
+    state.ataques ||= [];state.ataques.push({nome:'Novo ataque',atributo:'forca',bonus:0,dano:'1d8',critico:20,tipo:'Ct',alcance:'1,5m',propriedades:''});scheduleSave();renderVisaoCentral(container);
+  });
+  container.querySelectorAll('[data-main-remove-attack]').forEach(button=>button.onclick=()=>{
+    state.ataques.splice(Number(button.dataset.mainRemoveAttack),1);scheduleSave();renderVisaoCentral(container);
+  });
+  container.querySelectorAll('[data-main-add-ability]').forEach(button=>button.onclick=()=>{
+    if(button.dataset.mainAddAbility==='talento')state.talentos.push({nome:'',descricao:'',atual:0,maximo:0,custo:''});
+    else state.especializacaoDetalhes.habilidades.push({nome:'',descricao:'',nivel:1,atual:0,maximo:0,custo:''});
+    scheduleSave();renderVisaoCentral(container);
+  });
+  container.querySelectorAll('[data-main-remove-ability]').forEach(button=>button.onclick=()=>{
+    const i=Number(button.dataset.mainRemoveAbility),specializationCount=state.especializacaoDetalhes.habilidades.length;
+    if(i<specializationCount)state.especializacaoDetalhes.habilidades.splice(i,1);
+    else state.talentos.splice(i-specializationCount,1);
+    scheduleSave();renderVisaoCentral(container);
+  });
   container.querySelectorAll('[data-ia-atual],[data-ia-max]').forEach(input => input.addEventListener('change', () => {
     state.pontos ||= {};
     state.pontos[input.hasAttribute('data-ia-atual') ? 'integridadeAtual' : 'integridadeMax'] = Math.max(0, Number(input.value) || 0);
