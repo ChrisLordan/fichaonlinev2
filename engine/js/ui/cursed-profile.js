@@ -41,9 +41,18 @@ export function renderCursedProfile(root,char,handlers){
   });
   const add=make('button','+ Adicionar aptidão','btn btn--subtle btn--sm');add.type='button';add.onclick=()=>{char.aptidoes.personalizadas.push({nome:'',atual:0,maximo:0,custo:''});handlers.save();render();};apt.append(table,add);grid.append(apt);
 
-  const list=panel(restricted?'Lista de Artes Marciais':'Lista de Feitiço','cursed-spells');const rows=make('div',null,'cursed-spell-levels');
-  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?`Arte Marcial Nível ${level}`:`Feitiços Nível ${level}`));const found=techniques.filter(x=>Number(x.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const technique of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'),make('p',technique.descricao||'Sem descrição.'));group.append(note);}rows.append(group);}list.append(rows);grid.append(list);
-  const aptLevels=panel('Níveis de Aptidão','cursed-aptitude-levels-panel'),levels=make('div',null,'cursed-aptitude-levels');
+  const list=panel(restricted?'Lista de Artes Marciais':'Lista de Feitiço','cursed-spells');
+  if(!restricted){const addSpell=make('button','+ Adicionar feitiço','btn btn--subtle btn--sm');addSpell.type='button';addSpell.onclick=()=>{char.tecnica.feiticos ||= [];char.tecnica.feiticos.push({nivel:1,nome:'Novo feitiço',custo:1,alcance:'9m',alvo:'1 criatura',duracao:'instantâneo',descricao:''});handlers.save();render();};list.append(addSpell);}
+  const rows=make('div',null,'cursed-spell-levels');
+  for(let level=0;level<=5;level++){const group=make('section');group.append(make('h4',restricted?'Arte Marcial Nível '+level:'Feitiços Nível '+level));const found=techniques.map((item,index)=>({item,index})).filter(({item})=>Number(item.nivel||0)===level);if(!found.length)group.append(make('p','—','text-xs text-mute'));for(const {item:technique,index} of found){const note=make('details',null,'cursed-spell-note');note.append(make('summary',technique.nome||'Sem nome'));
+    if(restricted)note.append(make('p',technique.descricao||'Sem descrição.'));
+    else{
+     const fields=make('div',null,'cursed-spell-edit');
+     for(const [key,label,type]of [['nome','Nome','text'],['nivel','Nível','number'],['custo','Custo em PE','number'],['alcance','Alcance','text'],['alvo','Alvo','text'],['duracao','Duração','text'],['descricao','Descrição','textarea']]){const wrap=make('label',label,'field'),field=make(type==='textarea'?'textarea':'input');if(type!=='textarea')field.type=type;field.value=technique[key]??'';if(type==='number'){field.min='0';if(key==='nivel')field.max='5';}field.oninput=()=>{technique[key]=type==='number'?(field.value===''?'':Number(field.value)):field.value;handlers.save();};if(type==='textarea')field.rows=3;wrap.append(field);fields.append(wrap);}
+     const remove=make('button','Remover feitiço','btn btn--danger btn--sm');remove.type='button';remove.onclick=()=>{char.tecnica.feiticos.splice(index,1);handlers.save();render();};fields.append(remove);note.append(fields);
+    }
+    group.append(note);
+   }rows.append(group);}list.append(rows);grid.append(list);  const aptLevels=panel('Níveis de Aptidão','cursed-aptitude-levels-panel'),levels=make('div',null,'cursed-aptitude-levels');
   for(const a of APTIDOES){const item=make('label',null,'cursed-aptitude-item'),inputLevel=make('input');inputLevel.type='number';inputLevel.min='0';inputLevel.step='1';inputLevel.value=char.aptidoes[a.id]||0;inputLevel.setAttribute('aria-label',`Nível de ${a.nome}`);inputLevel.onchange=()=>{char.aptidoes[a.id]=Math.max(0,Math.floor(Number(inputLevel.value)||0));handlers.save();};item.append(inputLevel,make('small',a.nome));levels.append(item);}aptLevels.append(levels);grid.append(aptLevels);
 
   if(!restricted){char.tecnica.expansaoDominio ||= {nome:'',tipo:'',descricao:''};const domain=panel('Expansão de Domínio','cursed-domain');input(domain,'Nome da Expansão',char.tecnica.expansaoDominio,'nome');input(domain,'Tipo de Expansão',char.tecnica.expansaoDominio,'tipo');input(domain,'Descrição da Expansão',char.tecnica.expansaoDominio,'descricao',true);grid.append(domain);
