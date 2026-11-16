@@ -121,11 +121,12 @@ export function pendenciasPorNivel(char) {
   if (ganhoAtual) {
     const texto = ganhoAtual.ganho;
     if (/Habilidade de /.test(texto) || /talento/i.test(texto)) {
-      const faltam = missingAbilityChoices(char,idf.especializacao);
+      const talentosEscolhidos = (char.talentos || []).filter(t => String(t.nome || '').trim()).length;
+      const faltam = Math.max(0, missingAbilityChoices(char,idf.especializacao) - talentosEscolhidos);
       if (faltam > 0) {
         pendencias.push({
           tipo: "habilidade",
-          texto: `${faltam} escolha(s) de habilidade de ${idf.especializacao} pendente(s)`,
+          texto: `${faltam} escolha(s) de habilidade de ${idf.especializacao} ou talento pendente(s)`,
           nivel,
         });
       }
@@ -154,3 +155,4 @@ export function tabelaAteNivel(char) {
   const tab = tabelaPorEspecializacao(char.identificacao?.especializacao);
   return tab.map(linha => ({ ...linha, atual: linha.nivel === nivel }));
 }
+

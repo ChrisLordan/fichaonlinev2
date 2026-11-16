@@ -37,7 +37,8 @@ export const ESPECIALIZACOES = [
       escudos: ["todos"],
       tr: ["fortitude", "reflexos"],
       trObrigatorio: false,
-      pericias: ["oficio1", "oficio2", "atletismo", "acrobacia"],
+      pericias: ["oficio1", "oficio2"],
+      periciasEscolha: ["atletismo", "acrobacia"],
       periciasAdicionais: 3,
     },
     reqMulticlasse: { atributo: ["forca", "destreza", "sabedoria"], min: 16 },
@@ -264,6 +265,17 @@ export function aplicarTreinamentosEsp(char, espId) {
     periciasMarcadas.push(pid);
   }
 
+  // Especialista em Combate escolhe Atletismo OU Acrobacia; não recebe ambas.
+  if (espId === "Especialista em Combate") {
+    char.especializacaoDetalhes ||= {};
+    char.especializacaoDetalhes.periciaCombateEscolhida ||= "";
+    const escolhida = char.especializacaoDetalhes.periciaCombateEscolhida;
+    for (const pid of ["atletismo", "acrobacia"]) {
+      if (!char.pericias[pid]) char.pericias[pid] = { treino: false, mestre: false, outros: 0 };
+      char.pericias[pid].treino = pid === escolhida;
+    }
+  }
+
   const trs = esp.treinamentos?.tr || [];
   const trsMarcados = [];
   let exigeEscolhaTR = [];
@@ -289,3 +301,4 @@ export function nivelEfetivo(char, espId) {
   const outras = lista.filter(e => e.id !== espId).reduce((s, e) => s + e.nivel, 0);
   return alvo.nivel + Math.floor(outras / 2);
 }
+

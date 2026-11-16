@@ -34,6 +34,7 @@ export function renderWizard(app) {
     valores: { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, sabedoria: 10, presenca: 10 },
     pontos: 17, // para compra
     rolados: [10, 10, 10, 10, 10, 10],
+    roladosEscolhidos: { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 },
     especializacaoId: "",
   };
 
@@ -173,11 +174,13 @@ export function renderWizard(app) {
           state.valores = { forca: 15, destreza: 14, constituicao: 13, inteligencia: 12, sabedoria: 10, presenca: 8 };
           state.pontos = 17;
           state.rolados = [10, 10, 10, 10, 10, 10];
+          state.roladosEscolhidos = { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 };
         } else if (state.metodo === "compra") {
           state.valores = { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, sabedoria: 10, presenca: 10 };
           state.pontos = 17;
         } else {
           state.rolados = rolar6();
+          state.roladosEscolhidos = { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 };
           state.valores = { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, sabedoria: 10, presenca: 10 };
         }
         renderStepBody();
@@ -306,8 +309,12 @@ export function renderWizard(app) {
         cell.innerHTML = `
           <div class="attr-card__label">${a.nome}</div>
           <select class="input input--center" data-atr="${a.id}">
-            <option value="0">—</option>
-            ${state.rolados.map((v, i) => `<option value="${v}" ${state.valores[a.id] === v ? "selected" : ""}>${v}</option>`).join("")}
+            <option value="-1" ${state.roladosEscolhidos[a.id] < 0 ? "selected" : ""}>—</option>
+            ${state.rolados.map((v, i) => {
+              const usado = state.roladosEscolhidos[a.id] === i;
+              const ocupado = Object.entries(state.roladosEscolhidos).some(([id, idx]) => id !== a.id && idx === i);
+              return `<option value="${i}" ${usado ? "selected" : ""} ${ocupado ? "disabled" : ""}>${v}</option>`;
+            }).join("")}
           </select>
           <div class="attr-card__mod">${state.valores[a.id] === 10 ? "—" : formatMod(Math.floor((state.valores[a.id] - 10) / 2))}</div>
         `;
@@ -315,12 +322,15 @@ export function renderWizard(app) {
       });
       container.querySelectorAll("select[data-atr]").forEach(sel => {
         sel.onchange = () => {
-          state.valores[sel.dataset.atr] = Number(sel.value);
+          const index = Number(sel.value);
+          state.roladosEscolhidos[sel.dataset.atr] = Number.isInteger(index) ? index : -1;
+          state.valores[sel.dataset.atr] = index < 0 ? 10 : state.rolados[index];
           renderStepBody();
         };
       });
       container.querySelector("#wiz-rerolar").onclick = () => {
         state.rolados = rolar6();
+        state.roladosEscolhidos = { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 };
         state.valores = { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, sabedoria: 10, presenca: 10 };
         renderStepBody();
       };
@@ -549,3 +559,4 @@ export function renderWizard(app) {
 
   render();
 }
+

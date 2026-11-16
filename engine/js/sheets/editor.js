@@ -264,6 +264,7 @@ function renderVisaoCentral(container) {
           ${sheetSelect("Grau","identificacao.grau",idf.grau,GRAUS.map(g=>({value:g,label:g})))}
           ${sheetField("Experiência","identificacao.exp",idf.exp||0,"number")}
           ${sheetField("Nível","identificacao.nivel",nivel,"number")}
+          ${(idf.especializacoes || []).length > 1 ? `<label class="sheet-header-cell"><small>Subclasse que sobe</small><select id="level-up-specialization">${idf.especializacoes.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.id)} (Nv ${Number(e.nivel) || 0})</option>`).join("")}</select></label>` : ""}
           <div class="sheet-header-cell"><small>Treinamento</small><strong>+${d.prof}</strong></div>
         </div>
       </header>
@@ -580,7 +581,7 @@ function renderVisaoCentral(container) {
       let value=field.type==='checkbox'?field.checked:field.value;
       if(field.type==='number')value=value===''?'':Number(value);
       if(field.dataset.mainPath==='identificacao.nivel'){value=Math.max(1,Math.min(20,Number(value)||1));}
-      if(field.dataset.mainPath==='identificacao.nivel')aplicarLevelUp(state,value);
+      if(field.dataset.mainPath==='identificacao.nivel')aplicarLevelUp(state,value,container.querySelector('#level-up-specialization')?.value || null);
       else writeSheetPath(field.dataset.mainPath,value);
       if(field.dataset.mainPath==='identificacao.especializacao'){
         const primary=state.identificacao.especializacoes?.[0];
@@ -1347,6 +1348,7 @@ function renderPericias(container) {
   container.innerHTML = `
     <div class="card">
       <div class="section-title">Perícias <small>T = treinado, M = mestre. Bônus de treinamento atual: +${prof}</small></div>
+      ${state.identificacao?.especializacao === "Especialista em Combate" ? `<label class="text-xs text-soft">Treinamento inicial: escolha Atletismo ou Acrobacia <select class="input" id="combat-skill-choice"><option value="">Escolha…</option><option value="atletismo" ${state.especializacaoDetalhes?.periciaCombateEscolhida === "atletismo" ? "selected" : ""}>Atletismo</option><option value="acrobacia" ${state.especializacaoDetalhes?.periciaCombateEscolhida === "acrobacia" ? "selected" : ""}>Acrobacia</option></select></label>` : ""}
       <div style="overflow-x: auto;">
         <table class="table">
           <thead>
@@ -1370,6 +1372,17 @@ function renderPericias(container) {
       </div>
     </div>
   `;
+
+  container.querySelector("#combat-skill-choice")?.addEventListener("change", event => {
+    state.especializacaoDetalhes ||= {};
+    state.especializacaoDetalhes.periciaCombateEscolhida = event.target.value;
+    for (const id of ["atletismo", "acrobacia"]) {
+      state.pericias[id] ||= { treino: false, mestre: false, outros: 0 };
+      state.pericias[id].treino = id === event.target.value;
+    }
+    scheduleSave();
+    renderTab("pericias", container);
+  });
 
   container.querySelectorAll("[data-per]").forEach(inp => {
     inp.addEventListener("change", () => {
@@ -1544,6 +1557,7 @@ function renderTecnica(container) {
       <td><input class="input input--num" type="number" data-fei="${i}" data-k="nivel" value="${f.nivel || 0}" min="0" max="5"></td>
       <td><input class="input" data-fei="${i}" data-k="nome" value="${escapeHtml(f.nome || "")}"></td>
       <td><input class="input input--num" type="number" data-fei="${i}" data-k="custo" value="${f.custo || 1}" min="0"></td>
+      <td><label class="check"><input type="checkbox" data-fei="${i}" data-k="passiva" ${f.passiva ? "checked" : ""}><span class="check__box"></span><span class="check__label text-xs">Passiva</span></label></td>
       <td><input class="input" data-fei="${i}" data-k="alcance" value="${escapeHtml(f.alcance || "")}"></td>
       <td><input class="input" data-fei="${i}" data-k="alvo" value="${escapeHtml(f.alvo || "")}"></td>
       <td><input class="input" data-fei="${i}" data-k="duracao" value="${escapeHtml(f.duracao || "")}"></td>
@@ -1584,10 +1598,10 @@ function renderTecnica(container) {
         <table class="table">
           <thead>
             <tr>
-              <th>Nv</th><th>Nome</th><th>PE</th><th>Alcance</th><th>Alvo</th><th>Duração</th><th>Descrição</th><th></th>
+              <th>Nv</th><th>Nome</th><th>PE</th><th>Passiva</th><th>Alcance</th><th>Alvo</th><th>Duração</th><th>Descrição</th><th></th>
             </tr>
           </thead>
-          <tbody>${feiHTML || `<tr><td colspan="8" class="text-center text-mute" style="padding: var(--gap-4);">Nenhum feitiço adicionado.</td></tr>`}</tbody>
+          <tbody>${feiHTML || `<tr><td colspan="9" class="text-center text-mute" style="padding: var(--gap-4);">Nenhum feitiço adicionado.</td></tr>`}</tbody>
         </table>
       </div>
       <button class="btn btn--subtle btn--sm" id="add-fei" style="margin-top: var(--gap-3);">+ Adicionar feitiço</button>
@@ -1637,10 +1651,11 @@ function renderTecnica(container) {
     inp.addEventListener("change", () => {
       const i = Number(inp.dataset.fei);
       const k = inp.dataset.k;
-      let v = inp.value;
+      let v = k === "passiva" ? inp.checked : inp.value;
       if (k === "nivel" || k === "custo") v = Number(v) || 0;
       if (!state.tecnica.feiticos[i]) state.tecnica.feiticos[i] = {};
       state.tecnica.feiticos[i][k] = v;
+      if (k === "passiva" || k === "nivel") recalcularPontos(state);
       scheduleSave();
     });
   });
@@ -1656,7 +1671,7 @@ function renderTecnica(container) {
 
   container.querySelector("#add-fei").onclick = () => {
     if (!state.tecnica.feiticos) state.tecnica.feiticos = [];
-    state.tecnica.feiticos.push({ nivel: 1, nome: "Novo feitiço", custo: 1, alcance: "9m", alvo: "1 criatura", duracao: "instantâneo", descricao: "" });
+    state.tecnica.feiticos.push({ nivel: 1, nome: "Novo feitiço", custo: 1, passiva: false, alcance: "9m", alvo: "1 criatura", duracao: "instantâneo", descricao: "" });
     renderTab("tecnica", container);
     scheduleSave();
   };
@@ -1905,7 +1920,7 @@ function renderHabilidades(container, initial='origem') {
     if (!state.talentos) state.talentos = [];
     body.innerHTML = `
       <div class="card">
-        <div class="section-title">Talentos <small>escolhidos a cada nível par (1, 4, 7, 10...)</small></div>
+        <div class="section-title">Talentos <small>podem substituir uma habilidade de especialização</small></div>
         <p class="text-xs text-soft">Lista manual de talentos (ref. cap. 7). Origem Inato recebe 1 talento extra no 1° nível.</p>
         <div id="tal-list"></div>
         <button class="btn btn--subtle btn--sm" id="add-tal">+ Adicionar talento</button>
@@ -2492,7 +2507,9 @@ function bindAtributoInputs(container, onChange) {
       const v = Number(inp.value);
       const novo = Math.max(1, Math.min(30, v || 10));
       if (state.atributos[k] === novo) return;
+      const delta = novo - (Number(state.atributos[k]) || 10);
       state.atributos[k] = novo;
+      state.pontosAtributoGastos = Math.max(0, (Number(state.pontosAtributoGastos) || 0) + delta);
 
       // Recalcula PV/PE (modCon afeta PV; modAtributoChave afeta PE)
       const recalc = recalcularPontos(state);

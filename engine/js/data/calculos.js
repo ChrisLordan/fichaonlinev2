@@ -312,7 +312,8 @@ export function calcularPETotal(char) {
     total += pePorEspecializacao(esp, item.nivel, modChave, isPrimaria);
   }
   if(char.identificacao?.especializacao!=='Restringido')for(const key of ['compreensao','controleEnergia'])total+=(char.treinamentos?.[key]?.[0]?2:0)+(char.treinamentos?.[key]?.[2]?3:0);
-  return total;
+  total -= (char.tecnica?.feiticos || []).filter(f => f.passiva).reduce((sum, f) => sum + Math.max(0, Number(f.nivel) || 0), 0);
+  return Math.max(0, total);
 }
 
 /* Recalcula PV/PE aplicados ao char e ajusta atuais.
@@ -501,10 +502,10 @@ export function aplicarLevelUp(char, novoNivel, espId = null) {
   // Decide em qual especialização o nível vai
   const targetId = espId || idf.especializacao || idf.especializacoes[0]?.id;
   const targetIdx = idf.especializacoes.findIndex(e => e.id === targetId);
-  // Se espId foi passado explicitamente, essa esp sobe 1 nível.
-  // Senão, é single-class: a primária absorve todos os diff níveis.
+  // Se uma especialização foi escolhida, todos os níveis adicionados vão para ela.
+  // Senão, a primária absorve os níveis como no modo single-class.
   const diffNivel = novoNivel - nivelAntigo;
-  const niveisParaTarget = espId ? 1 : diffNivel;
+  const niveisParaTarget = diffNivel;
   if (targetIdx < 0) {
     idf.especializacoes.push({ id: targetId, nivel: Math.max(1, niveisParaTarget) });
   } else {
