@@ -31,10 +31,11 @@ export function renderWizard(app) {
     origemPersonalizada: { nome: '', caracteristicas: [] },
     clanId: "",
     metodo: "fixos",
-    valores: { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, sabedoria: 10, presenca: 10 },
+    valores: { forca: 15, destreza: 14, constituicao: 13, inteligencia: 12, sabedoria: 10, presenca: 8 },
     pontos: 17, // para compra
     rolados: [10, 10, 10, 10, 10, 10],
     roladosEscolhidos: { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 },
+    valoresFixosEscolhidos: { forca: 15, destreza: 14, constituicao: 13, inteligencia: 12, sabedoria: 10, presenca: 8 },
     especializacaoId: "",
   };
 
@@ -172,6 +173,7 @@ export function renderWizard(app) {
         // Reset valores
         if (state.metodo === "fixos") {
           state.valores = { forca: 15, destreza: 14, constituicao: 13, inteligencia: 12, sabedoria: 10, presenca: 8 };
+          state.valoresFixosEscolhidos = { forca: 15, destreza: 14, constituicao: 13, inteligencia: 12, sabedoria: 10, presenca: 8 };
           state.pontos = 17;
           state.rolados = [10, 10, 10, 10, 10, 10];
           state.roladosEscolhidos = { forca: -1, destreza: -1, constituicao: -1, inteligencia: -1, sabedoria: -1, presenca: -1 };
@@ -203,10 +205,13 @@ export function renderWizard(app) {
       ATRIBUTOS.forEach(a => {
         const cell = document.createElement("div");
         cell.className = "attr-card";
+        const valorAtual = state.valoresFixosEscolhidos[a.id];
+        const ocupados = new Set(Object.entries(state.valoresFixosEscolhidos).filter(([id]) => id !== a.id).map(([,v]) => v));
         cell.innerHTML = `
           <div class="attr-card__label">${a.nome}</div>
           <select class="input input--center" data-atr="${a.id}">
-            ${usados.map(v => `<option value="${v}" ${state.valores[a.id] === v ? "selected" : ""}>${v}</option>`).join("")}
+            <option value="0" ${valorAtual ? "" : "selected"}>—</option>
+            ${usados.filter(v => !ocupados.has(v)).map(v => `<option value="${v}" ${valorAtual === v ? "selected" : ""}>${v}</option>`).join("")}
           </select>
           <div class="attr-card__mod">${formatMod(Math.floor((state.valores[a.id] - 10) / 2))}</div>
         `;
@@ -214,7 +219,9 @@ export function renderWizard(app) {
       });
       container.querySelectorAll("select[data-atr]").forEach(sel => {
         sel.onchange = () => {
-          state.valores[sel.dataset.atr] = Number(sel.value);
+          const value = Number(sel.value);
+          state.valoresFixosEscolhidos[sel.dataset.atr] = value || 0;
+          state.valores[sel.dataset.atr] = value || 10;
           // Recompute modais
           renderStepBody();
         };
@@ -261,11 +268,19 @@ export function renderWizard(app) {
         container.querySelector("#wiz-pontos-val").textContent = state.pontos;
         if (state.pontos < 0) container.querySelector("#wiz-pontos").style.color = "var(--danger)";
         else container.querySelector("#wiz-pontos").style.color = "var(--text-accent)";
+        container.querySelectorAll("[data-inc]").forEach(btn => {
+          const id = btn.dataset.inc;
+          btn.disabled = state.valores[id] >= 15 || gastos + custo(state.valores[id] + 1) - custo(state.valores[id]) > 17;
+        });
       };
+      recalc();
       container.querySelectorAll("[data-inc]").forEach(btn => {
         btn.onclick = () => {
           const id = btn.dataset.inc;
-          if (state.valores[id] < 15) {
+          const atual = custo(state.valores[id]);
+          const proximo = custo(state.valores[id] + 1);
+          const gastosAtuais = ATRIBUTOS.reduce((sum, a) => sum + custo(state.valores[a.id]), 0);
+          if (state.valores[id] < 15 && gastosAtuais + proximo - atual <= 17) {
             state.valores[id]++;
             renderStepBody();
           }
@@ -284,6 +299,8 @@ export function renderWizard(app) {
         inp.onchange = () => {
           let v = Number(inp.value);
           v = Math.max(8, Math.min(15, v));
+          const novosGastos = ATRIBUTOS.reduce((sum, a) => sum + custo(a.id === inp.dataset.atr ? v : state.valores[a.id]), 0);
+          if (novosGastos > 17) { renderStepBody(); return; }
           state.valores[inp.dataset.atr] = v;
           renderStepBody();
         };
@@ -470,6 +487,13 @@ export function renderWizard(app) {
         if (state.metodo === "rolagem" && state.valores[a.id] === 10) continue;
         if (state.valores[a.id] < 8) state.valores[a.id] = 8;
         if (state.valores[a.id] > 15 && state.metodo !== "rolagem") state.valores[a.id] = 15;
+      }
+      const fixosEscolhidos = Object.values(state.valoresFixosEscolhidos).filter(Boolean);
+      if (state.metodo === "fixos" && (fixosEscolhidos.length !== 6 || new Set(fixosEscolhidos).size !== 6)) {
+        toast("Distribua cada um dos seis valores fixos uma única vez", "error"); return;
+      }
+      if (state.metodo === "compra" && state.pontos < 0) {
+        toast("A compra por pontos não pode ultrapassar os 17 pontos disponíveis", "error"); return;
       }
     }
     if (state.step === 4 && !state.especializacaoId) {
